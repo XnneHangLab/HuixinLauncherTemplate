@@ -1,19 +1,14 @@
-import type { ReactElement } from 'react';
 import { HomePage } from '../pages/HomePage/HomePage';
 import { PlaceholderPage } from '../pages/PlaceholderPage/PlaceholderPage';
+import { SettingsPage } from '../pages/SettingsPage/SettingsPage';
 import type { PageId } from '../data/nav';
 
-export function renderPage(pageId: PageId): ReactElement {
+export function renderPage(pageId: PageId) {
   switch (pageId) {
     case 'home':
       return <HomePage />;
     case 'settings':
-      return (
-        <PlaceholderPage
-          title="设置"
-          description="设置页完整复刻将在后续任务中接入。"
-        />
-      );
+      return <SettingsPage />;
     case 'advanced':
       return (
         <PlaceholderPage
@@ -70,9 +65,5 @@ export function renderPage(pageId: PageId): ReactElement {
           description="预留运行日志和命令输出视图。"
         />
       );
-    default: {
-      const exhaustiveCheck: never = pageId;
-      throw new Error(`Unhandled page id: ${exhaustiveCheck}`);
-    }
   }
 }
