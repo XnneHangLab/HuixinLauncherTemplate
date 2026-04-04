@@ -41,9 +41,7 @@ export const folders: FolderItem[] = [
 ];
 
 export const versionMeta = [
-  '启动器版本：绘心启动器 Preview',
-  '项目定位：XnneHangLab 可复用启动器模板',
-  '当前状态：界面骨架与控制台联动开发中',
+  '启动器版本：绘心启动器 0.1.0',
 ];
 
 export const notices = [

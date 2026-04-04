@@ -35,7 +35,7 @@ describe('HomePage', () => {
     ).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /打开 / })).toHaveLength(8);
     expect(
-      screen.getByText('启动器版本：绘心启动器 Preview'),
+      screen.getByText('启动器版本：绘心启动器 0.1.0'),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
