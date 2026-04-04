@@ -10,7 +10,9 @@
   overflow: hidden;
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.06);
-  background: url('../assets/home/hero-bg.png') center / cover no-repeat;
+  background:
+    linear-gradient(180deg, rgba(10, 14, 20, 0.12), rgba(10, 14, 20, 0.28)),
+    url('../assets/home/hero-bg.png') center / cover no-repeat;
 }
 
 .home-page .hero-copy {
