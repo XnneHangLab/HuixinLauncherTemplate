@@ -11,7 +11,7 @@
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.06);
   background:
-    linear-gradient(180deg, rgba(10, 14, 20, 0.12), rgba(10, 14, 20, 0.28)),
+    linear-gradient(180deg, var(--hero-overlay-start), var(--hero-overlay-end)),
     url('../assets/home/hero-bg.png') center / cover no-repeat;
 }
 
@@ -39,7 +39,7 @@
 .home-page .hero-copy p {
   margin: 0;
   font-size: 18px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--hero-copy-text);
 }
 
 .home-page .main-grid {
@@ -68,8 +68,8 @@
   justify-content: space-between;
   gap: 12px;
   padding: 18px;
-  background: linear-gradient(180deg, #202732, #1b212a);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: linear-gradient(180deg, var(--card-bg-start), var(--card-bg-end));
+  border: 1px solid var(--line);
   border-radius: 14px;
   color: inherit;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
@@ -136,8 +136,8 @@
   flex-direction: column;
   padding: 18px 18px 20px;
   border-radius: 16px;
-  background: linear-gradient(180deg, #1b212a, #171c24);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: linear-gradient(180deg, var(--card-bg-start), var(--card-bg-end));
+  border: 1px solid var(--line);
 }
 
 .home-page .notice h2 {

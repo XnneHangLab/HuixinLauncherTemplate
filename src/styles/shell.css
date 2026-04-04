@@ -3,7 +3,7 @@
   height: 100%;
   min-height: 100%;
   padding: 0;
-  background: #101419;
+  background: var(--shell-bg);
 }
 
 .app-shell {
@@ -12,7 +12,7 @@
   min-height: 0;
   display: grid;
   grid-template-columns: var(--sidebar-w) 1fr;
-  background: #101419;
+  background: var(--shell-bg-2);
   border: 0;
   border-radius: 0;
   overflow: hidden;
@@ -26,7 +26,7 @@
   min-height: 0;
   gap: 10px;
   padding: 14px 10px;
-  background: linear-gradient(180deg, #13171d 0%, #11151a 100%);
+  background: linear-gradient(180deg, var(--sidebar-bg-start) 0%, var(--sidebar-bg-end) 100%);
   border-right: 1px solid var(--line);
 }
 
@@ -104,7 +104,7 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  background: linear-gradient(180deg, #171b22 0%, #161a21 100%);
+  background: linear-gradient(180deg, var(--content-bg-start) 0%, var(--content-bg-end) 100%);
 }
 
 .topbar {
