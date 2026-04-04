@@ -27,6 +27,10 @@
   --hero-image-filter: saturate(1) brightness(1) contrast(1);
   --card-bg-start: #202732;
   --card-bg-end: #1b212a;
+  --elevated-card-bg-start: #232b36;
+  --elevated-card-bg-end: #1c232d;
+  --elevated-card-border: rgba(255, 255, 255, 0.08);
+  --elevated-card-shadow: 0 24px 56px rgba(0, 0, 0, 0.34);
   --input-bg: #1a212a;
   --input-border: rgba(121, 161, 221, 0.6);
   --input-text: #dce7f6;
@@ -69,6 +73,10 @@
   --hero-image-filter: saturate(1.18) contrast(1.08) brightness(0.82);
   --card-bg-start: #ffffff;
   --card-bg-end: #f5f8fc;
+  --elevated-card-bg-start: #ffffff;
+  --elevated-card-bg-end: #eef4fb;
+  --elevated-card-border: rgba(59, 130, 246, 0.18);
+  --elevated-card-shadow: 0 22px 48px rgba(41, 74, 122, 0.14);
   --input-bg: #ffffff;
   --input-border: rgba(59, 130, 246, 0.25);
   --input-text: #182231;
