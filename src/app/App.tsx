@@ -1,11 +1,11 @@
 import { Providers } from './providers';
+import { AppShell } from '../layouts/AppShell/AppShell';
+import '../styles/shell.css';
 
 function App() {
   return (
     <Providers>
-      <div className="app-bootstrap">
-        <div className="app-bootstrap__title">UI 复刻预览</div>
-      </div>
+      <AppShell />
     </Providers>
   );
 }
