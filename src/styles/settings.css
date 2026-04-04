@@ -51,6 +51,7 @@
   margin: 10px 0 12px;
   font-size: 20px;
   font-weight: 700;
+  color: var(--text);
 }
 
 .settings-shell .group-title--standalone {
@@ -92,9 +93,13 @@
   display: grid;
   place-items: center;
   border-radius: 12px;
-  background: #232a34;
-  color: #d8e5ff;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: linear-gradient(
+    180deg,
+    var(--icon-panel-bg-start),
+    var(--icon-panel-bg-end)
+  );
+  color: var(--icon-panel-text);
+  border: 1px solid var(--icon-panel-border);
   flex: none;
 }
 
@@ -109,6 +114,7 @@
 .settings-shell .setting-name {
   margin-bottom: 4px;
   font-size: 15px;
+  color: var(--text);
 }
 
 .settings-shell .setting-desc {

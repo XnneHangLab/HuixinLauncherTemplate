@@ -10,9 +10,26 @@
   overflow: hidden;
   border-radius: 18px;
   border: 1px solid var(--line);
-  background:
-    linear-gradient(180deg, var(--hero-overlay-start), var(--hero-overlay-end)),
-    url('../assets/home/hero-bg.png') center / cover no-repeat;
+  background: linear-gradient(180deg, var(--card-bg-start), var(--card-bg-end));
+  isolation: isolate;
+}
+
+.home-page .hero::before,
+.home-page .hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.home-page .hero::before {
+  background: url('../assets/home/hero-bg.png') center / cover no-repeat;
+  filter: var(--hero-image-filter);
+  transform: scale(1.02);
+}
+
+.home-page .hero::after {
+  background: linear-gradient(180deg, var(--hero-overlay-start), var(--hero-overlay-end));
 }
 
 .home-page .hero-copy {
@@ -20,13 +37,16 @@
   z-index: 2;
   max-width: 560px;
   padding: 44px 52px;
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.28);
+  color: var(--hero-title-text);
+  text-shadow: 0 4px 18px rgba(0, 0, 0, 0.42);
 }
 
 .home-page .hero-copy__eyebrow {
   margin-bottom: 10px;
   font-size: 19px;
   opacity: 0.96;
+  color: var(--hero-eyebrow-text);
+  font-weight: 600;
 }
 
 .home-page .hero-copy h1 {
@@ -34,6 +54,7 @@
   font-size: 46px;
   line-height: 1.12;
   letter-spacing: 0.5px;
+  color: var(--hero-title-text);
 }
 
 .home-page .hero-copy p {
@@ -53,6 +74,7 @@
   font-size: 20px;
   font-weight: 700;
   letter-spacing: 0.2px;
+  color: var(--text);
 }
 
 .home-page .folder-grid {
@@ -71,7 +93,7 @@
   background: linear-gradient(180deg, var(--card-bg-start), var(--card-bg-end));
   border: 1px solid var(--line);
   border-radius: 14px;
-  color: inherit;
+  color: var(--text);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
 
@@ -88,9 +110,13 @@
   display: grid;
   place-items: center;
   border-radius: 12px;
-  background: linear-gradient(180deg, #2d3643, #232a35);
-  color: #dbe7ff;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: linear-gradient(
+    180deg,
+    var(--icon-panel-bg-start),
+    var(--icon-panel-bg-end)
+  );
+  color: var(--icon-panel-text);
+  border: 1px solid var(--icon-panel-border);
   flex: none;
 }
 
@@ -102,6 +128,7 @@
 
 .home-page .folder-title {
   margin: 2px 0 6px;
+  color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -143,6 +170,7 @@
 .home-page .notice h2 {
   margin: 2px 0 16px;
   font-size: 18px;
+  color: var(--text);
 }
 
 .home-page .notice p {
