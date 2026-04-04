@@ -25,6 +25,16 @@
   --hero-eyebrow-text: rgba(255, 255, 255, 0.92);
   --hero-copy-text: rgba(255, 255, 255, 0.9);
   --hero-image-filter: saturate(1) brightness(1) contrast(1);
+  --run-btn-idle-bg-start: #3497df;
+  --run-btn-idle-bg-end: #1f6fbc;
+  --run-btn-idle-shadow: 0 12px 28px rgba(31, 111, 188, 0.28);
+  --run-btn-idle-hover-shadow: 0 16px 34px rgba(31, 111, 188, 0.34);
+  --run-btn-idle-active-shadow: 0 8px 18px rgba(31, 111, 188, 0.22);
+  --run-btn-running-bg-start: #2b88d0;
+  --run-btn-running-bg-end: #185f9d;
+  --run-btn-running-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 14px 30px rgba(24, 95, 157, 0.28);
   --card-bg-start: #202732;
   --card-bg-end: #1b212a;
   --folder-card-bg-start: #212933;
@@ -83,6 +93,16 @@
   --hero-eyebrow-text: rgba(244, 248, 255, 0.92);
   --hero-copy-text: rgba(255, 255, 255, 0.96);
   --hero-image-filter: saturate(1.42) contrast(1.06) brightness(0.98);
+  --run-btn-idle-bg-start: #48b0ff;
+  --run-btn-idle-bg-end: #2794fb;
+  --run-btn-idle-shadow: 0 12px 30px rgba(39, 148, 251, 0.28);
+  --run-btn-idle-hover-shadow: 0 16px 36px rgba(39, 148, 251, 0.34);
+  --run-btn-idle-active-shadow: 0 8px 18px rgba(39, 148, 251, 0.24);
+  --run-btn-running-bg-start: #51c1ff;
+  --run-btn-running-bg-end: #1f9df2;
+  --run-btn-running-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 14px 34px rgba(31, 157, 242, 0.32);
   --card-bg-start: #fbfeff;
   --card-bg-end: #f0f9fa;
   --folder-card-bg-start: #ffffff;

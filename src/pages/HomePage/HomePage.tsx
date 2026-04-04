@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { FolderGrid } from '../../components/home/FolderGrid/FolderGrid';
 import { HeroBanner } from '../../components/home/HeroBanner/HeroBanner';
 import { NoticePanel } from '../../components/home/NoticePanel/NoticePanel';
@@ -11,8 +10,15 @@ import {
 } from '../../data/home';
 import '../../styles/home.css';
 
-export function HomePage() {
-  const [launchState, setLaunchState] = useState<LaunchButtonState>('idle');
+interface HomePageProps {
+  launchState: LaunchButtonState;
+  onToggleLaunchState: () => void;
+}
+
+export function HomePage({
+  launchState,
+  onToggleLaunchState,
+}: HomePageProps) {
 
   return (
     <div className="home-page">
@@ -34,7 +40,7 @@ export function HomePage() {
           notices={notices}
           buttonLabel={launchButtonLabels[launchState]}
           launchState={launchState}
-          onLaunch={() => setLaunchState('running')}
+          onLaunch={onToggleLaunchState}
         />
       </div>
     </div>

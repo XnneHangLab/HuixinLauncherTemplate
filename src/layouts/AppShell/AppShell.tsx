@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Sidebar } from '../../components/navigation/Sidebar/Sidebar';
 import { Topbar } from '../../components/window/Topbar/Topbar';
+import {
+  toggleLaunchButtonState,
+  type LaunchButtonState,
+} from '../../data/home';
 import { navItems, type PageId } from '../../data/nav';
 import { renderPage } from '../../app/routes';
 import {
@@ -13,6 +17,7 @@ import {
 export function AppShell() {
   const [activePage, setActivePage] = useState<PageId>('home');
   const [theme, setTheme] = useState<ThemeMode>(() => readStoredTheme() ?? 'night');
+  const [launchState, setLaunchState] = useState<LaunchButtonState>('idle');
 
   useEffect(() => {
     writeStoredTheme(theme);
@@ -33,7 +38,15 @@ export function AppShell() {
 
         <main className="content-shell">
           <Topbar title="UI 复刻预览" />
-          <section className="page-shell">{renderPage(activePage)}</section>
+          <section className="page-shell">
+            {renderPage(activePage, {
+              launchState,
+              onToggleLaunchState: () =>
+                setLaunchState((currentState) =>
+                  toggleLaunchButtonState(currentState),
+                ),
+            })}
+          </section>
         </main>
       </div>
     </div>

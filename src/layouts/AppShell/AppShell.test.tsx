@@ -149,4 +149,31 @@ describe('AppShell', () => {
 
     expect((root as Element).getAttribute('data-theme')).toBe('day');
   });
+
+  it('keeps launch state across page switches and lets running toggle back to idle', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const launchButton = screen.getByRole('button', { name: /^▶ 一键启动$/ });
+    expect(launchButton).toHaveAttribute('data-state', 'idle');
+
+    await user.click(launchButton);
+    expect(screen.getByRole('button', { name: /^✈ 运行中$/ })).toHaveAttribute(
+      'data-state',
+      'running',
+    );
+
+    await user.click(screen.getByRole('button', { name: '设置' }));
+    await user.click(screen.getByRole('button', { name: '一键启动' }));
+
+    const runningButton = screen.getByRole('button', { name: /^✈ 运行中$/ });
+    expect(runningButton).toHaveAttribute('data-state', 'running');
+
+    await user.click(runningButton);
+
+    expect(screen.getByRole('button', { name: /^▶ 一键启动$/ })).toHaveAttribute(
+      'data-state',
+      'idle',
+    );
+  });
 });

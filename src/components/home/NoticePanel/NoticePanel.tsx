@@ -25,7 +25,6 @@ export function NoticePanel({
         type="button"
         className="run-btn"
         data-state={launchState}
-        disabled={launchState === 'running'}
         onClick={onLaunch}
       >
         {buttonLabel}

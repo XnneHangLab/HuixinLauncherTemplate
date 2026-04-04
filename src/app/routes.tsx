@@ -3,11 +3,25 @@ import { HomePage } from '../pages/HomePage/HomePage';
 import { PlaceholderPage } from '../pages/PlaceholderPage/PlaceholderPage';
 import { SettingsPage } from '../pages/SettingsPage/SettingsPage';
 import type { PageId } from '../data/nav';
+import type { LaunchButtonState } from '../data/home';
 
-export function renderPage(pageId: PageId): ReactElement {
+interface RenderPageOptions {
+  launchState: LaunchButtonState;
+  onToggleLaunchState: () => void;
+}
+
+export function renderPage(
+  pageId: PageId,
+  { launchState, onToggleLaunchState }: RenderPageOptions,
+): ReactElement {
   switch (pageId) {
     case 'home':
-      return <HomePage />;
+      return (
+        <HomePage
+          launchState={launchState}
+          onToggleLaunchState={onToggleLaunchState}
+        />
+      );
     case 'settings':
       return <SettingsPage />;
     case 'advanced':

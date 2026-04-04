@@ -58,3 +58,9 @@ export const launchButtonLabels: Record<LaunchButtonState, string> = {
   idle: '▶ 一键启动',
   running: '✈ 运行中',
 };
+
+export function toggleLaunchButtonState(
+  currentState: LaunchButtonState,
+): LaunchButtonState {
+  return currentState === 'idle' ? 'running' : 'idle';
+}
