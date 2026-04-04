@@ -18,7 +18,10 @@ export function SettingsTabs({
           key={item.id}
           type="button"
           role="tab"
+          id={`settings-tab-${item.id}`}
+          aria-controls={`settings-panel-${item.id}`}
           aria-selected={item.id === activeTab}
+          tabIndex={item.id === activeTab ? 0 : -1}
           className={`settings-tab${item.id === activeTab ? ' active' : ''}`}
           onClick={() => onSelect(item.id)}
         >

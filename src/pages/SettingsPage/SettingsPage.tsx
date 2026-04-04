@@ -43,7 +43,11 @@ export function SettingsPage() {
 
       <div className="settings-wrap">
         {activeTab === 'general' ? (
-          <>
+          <div
+            id="settings-panel-general"
+            role="tabpanel"
+            aria-labelledby="settings-tab-general"
+          >
             <div className="group-title group-title--standalone">网络设置</div>
 
             <SettingCard>
@@ -51,7 +55,11 @@ export function SettingsPage() {
                 name="代理设置"
                 description="代理服务器设置"
                 icon="🛩"
-                trailing={<span className="setting-chevron">⌃</span>}
+                trailing={
+                  <span className="setting-chevron" aria-hidden="true">
+                    ⌃
+                  </span>
+                }
               />
 
               <SettingRow name="代理服务器地址" inset>
@@ -154,12 +162,18 @@ export function SettingsPage() {
             </SettingCard>
 
             <div className="footer-space" />
-          </>
+          </div>
         ) : (
-          <div className="about-card">
-            {aboutInfo.map((line) => (
-              <p key={line}>{line}</p>
-            ))}
+          <div
+            id="settings-panel-about"
+            role="tabpanel"
+            aria-labelledby="settings-tab-about"
+          >
+            <div className="about-card">
+              {aboutInfo.map((line) => (
+                <p key={line}>{line}</p>
+              ))}
+            </div>
           </div>
         )}
       </div>

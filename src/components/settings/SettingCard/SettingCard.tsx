@@ -6,9 +6,9 @@ interface SettingCardProps extends PropsWithChildren {
 
 export function SettingCard({ title, children }: SettingCardProps) {
   return (
-    <section className="setting-card">
+    <div className="setting-card">
       {title ? <div className="group-title">{title}</div> : null}
       {children}
-    </section>
+    </div>
   );
 }
