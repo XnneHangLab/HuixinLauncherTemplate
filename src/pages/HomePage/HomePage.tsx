@@ -1,10 +1,19 @@
+import { useState } from 'react';
 import { FolderGrid } from '../../components/home/FolderGrid/FolderGrid';
 import { HeroBanner } from '../../components/home/HeroBanner/HeroBanner';
 import { NoticePanel } from '../../components/home/NoticePanel/NoticePanel';
-import { folders, notices, runButtonLabel, versionMeta } from '../../data/home';
+import {
+  folders,
+  launchButtonLabels,
+  type LaunchButtonState,
+  notices,
+  versionMeta,
+} from '../../data/home';
 import '../../styles/home.css';
 
 export function HomePage() {
+  const [launchState, setLaunchState] = useState<LaunchButtonState>('idle');
+
   return (
     <div className="home-page">
       <HeroBanner />
@@ -21,7 +30,12 @@ export function HomePage() {
           </div>
         </div>
 
-        <NoticePanel notices={notices} buttonLabel={runButtonLabel} />
+        <NoticePanel
+          notices={notices}
+          buttonLabel={launchButtonLabels[launchState]}
+          launchState={launchState}
+          onLaunch={() => setLaunchState('running')}
+        />
       </div>
     </div>
   );

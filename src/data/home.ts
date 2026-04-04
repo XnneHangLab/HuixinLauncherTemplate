@@ -12,6 +12,8 @@ export interface FolderItem {
   icon: string;
 }
 
+export type LaunchButtonState = 'idle' | 'running';
+
 export const heroCopy = {
   eyebrow: 'XnneHangLab Launcher Template',
   title: '绘心 - 启动器',
@@ -52,4 +54,7 @@ export const notices = [
   '本启动器作者为纯白忧伤王秋葉 aaki@bilibili（UID 12566101）。',
 ];
 
-export const runButtonLabel = '✈ 运行中';
+export const launchButtonLabels: Record<LaunchButtonState, string> = {
+  idle: '▶ 一键启动',
+  running: '✈ 运行中',
+};
