@@ -3,6 +3,7 @@
   grid-template-rows: auto 1fr;
   gap: 14px;
   height: 100%;
+  min-height: 0;
 }
 
 .settings-shell .settings-tabs {
@@ -42,6 +43,7 @@
 
 .settings-shell .settings-wrap {
   overflow: auto;
+  min-height: 0;
   padding-right: 4px;
 }
 

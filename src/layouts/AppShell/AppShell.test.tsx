@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event';
 import App from '../../app/App';
 
 describe('AppShell', () => {
+  const zeroLengthValues = new Set(['0', '0px']);
+
   it('switches between nav pages and renders active page content', async () => {
     const user = userEvent.setup();
 
@@ -48,5 +50,43 @@ describe('AppShell', () => {
     await user.click(screen.getByRole('button', { name: '模型管理' }));
     expect(screen.getByText('模型管理 页面建设中')).toBeInTheDocument();
     expect(screen.getAllByRole('button').length).toBeGreaterThanOrEqual(10);
+  });
+
+  it('keeps the shell height constrained when the settings page is active', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<App />);
+
+    await user.click(screen.getByRole('button', { name: '设置' }));
+
+    const launcherRoot = container.querySelector('.launcher-root');
+    const appShell = container.querySelector('.app-shell');
+    const contentShell = container.querySelector('.content-shell');
+    const pageShell = container.querySelector('.page-shell');
+    const settingsShell = container.querySelector('.settings-shell');
+    const settingsWrap = container.querySelector('.settings-wrap');
+
+    expect(launcherRoot).not.toBeNull();
+    expect(appShell).not.toBeNull();
+    expect(contentShell).not.toBeNull();
+    expect(pageShell).not.toBeNull();
+    expect(settingsShell).not.toBeNull();
+    expect(settingsWrap).not.toBeNull();
+
+    expect(getComputedStyle(launcherRoot as Element).height).toBe('100%');
+    expect(
+      zeroLengthValues.has(getComputedStyle(appShell as Element).minHeight),
+    ).toBe(true);
+    expect(
+      zeroLengthValues.has(getComputedStyle(contentShell as Element).minHeight),
+    ).toBe(true);
+    expect(
+      zeroLengthValues.has(getComputedStyle(pageShell as Element).minHeight),
+    ).toBe(true);
+    expect(
+      zeroLengthValues.has(getComputedStyle(settingsShell as Element).minHeight),
+    ).toBe(true);
+    expect(
+      zeroLengthValues.has(getComputedStyle(settingsWrap as Element).minHeight),
+    ).toBe(true);
   });
 });
