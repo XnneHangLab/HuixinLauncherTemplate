@@ -14,7 +14,7 @@ export interface FolderItem {
 
 export const heroCopy = {
   eyebrow: 'XnneHangLab Launcher Template',
-  title: '绘心',
+  title: '绘心 - 启动器',
   description: '让 AI 更有温度，也更适合长期陪伴。',
 };
 
