@@ -5,6 +5,10 @@ import App from '../../app/App';
 describe('AppShell', () => {
   const zeroLengthValues = new Set(['0', '0px']);
 
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   it('switches between nav pages and renders active page content', async () => {
     const user = userEvent.setup();
 
@@ -17,6 +21,7 @@ describe('AppShell', () => {
     expect(shell).not.toBeNull();
     expect(getComputedStyle(root as Element).paddingTop).toBe('0px');
     expect(getComputedStyle(shell as Element).borderTopWidth).toBe('0px');
+    expect((root as Element).getAttribute('data-theme')).toBe('night');
 
     expect(
       screen.getByRole('img', { name: '绘心 Logo' }),
@@ -92,5 +97,30 @@ describe('AppShell', () => {
     expect(
       zeroLengthValues.has(getComputedStyle(settingsWrap as Element).minHeight),
     ).toBe(true);
+  });
+
+  it('toggles the theme from the lightbulb item and stores the choice', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<App />);
+
+    const root = container.querySelector('.launcher-root');
+    const lightbulb = screen.getByRole('button', { name: '灯泡' });
+
+    expect((root as Element).getAttribute('data-theme')).toBe('night');
+
+    await user.click(lightbulb);
+
+    expect((root as Element).getAttribute('data-theme')).toBe('day');
+    expect(localStorage.getItem('xnnehanglab.theme')).toBe('day');
+    expect(lightbulb).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('restores the saved theme on first render', () => {
+    localStorage.setItem('xnnehanglab.theme', 'day');
+    const { container } = render(<App />);
+
+    const root = container.querySelector('.launcher-root');
+
+    expect((root as Element).getAttribute('data-theme')).toBe('day');
   });
 });
