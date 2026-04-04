@@ -130,7 +130,17 @@
 }
 
 .topbar-help {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1;
   opacity: 0.8;
+}
+
+.topbar-help:hover {
+  opacity: 1;
 }
 
 .window-btns {

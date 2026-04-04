@@ -8,6 +8,14 @@ describe('AppShell', () => {
 
     render(<App />);
 
+    expect(
+      screen.getByRole('navigation', { name: '主导航' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '帮助' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('group', { name: '窗口控制' }),
+    ).toBeInTheDocument();
+
     expect(screen.getByRole('button', { name: '一键启动' })).toHaveAttribute(
       'aria-pressed',
       'true',

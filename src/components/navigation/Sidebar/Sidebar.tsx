@@ -18,7 +18,7 @@ export function Sidebar({ items, activePage, onSelect }: SidebarProps) {
         <span>绘世 2.8.5</span>
       </div>
 
-      <div className="nav">
+      <nav className="nav" aria-label="主导航">
         {primaryItems.map((item) => (
           <NavItem
             key={item.id}
@@ -38,7 +38,7 @@ export function Sidebar({ items, activePage, onSelect }: SidebarProps) {
             onSelect={onSelect}
           />
         ))}
-      </div>
+      </nav>
     </aside>
   );
 }

@@ -11,7 +11,9 @@ export function Topbar({ title }: TopbarProps) {
         {title}
       </div>
       <div className="topbar-right">
-        <div className="topbar-help">?</div>
+        <button type="button" className="topbar-help" aria-label="帮助">
+          ?
+        </button>
         <WindowControls />
       </div>
     </header>
