@@ -1,9 +1,9 @@
-import type { LaunchButtonState } from '../../../data/home';
+import type { LaunchState } from '../../../services/launcher/launcher';
 
 interface NoticePanelProps {
   notices: string[];
   buttonLabel: string;
-  launchState: LaunchButtonState;
+  launchState: LaunchState;
   onLaunch: () => void;
 }
 

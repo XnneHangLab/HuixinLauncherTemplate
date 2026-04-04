@@ -35,6 +35,13 @@
   --run-btn-running-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.14),
     0 14px 30px rgba(24, 95, 157, 0.28);
+  --console-panel-bg: #0f141a;
+  --console-panel-border: rgba(255, 255, 255, 0.08);
+  --console-panel-text: #e7eef8;
+  --console-panel-muted: #8ea2b8;
+  --console-system: #72b8ff;
+  --console-stdout: #e7eef8;
+  --console-stderr: #ff9b9b;
   --card-bg-start: #202732;
   --card-bg-end: #1b212a;
   --folder-card-bg-start: #212933;
@@ -103,6 +110,13 @@
   --run-btn-running-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.18),
     0 14px 34px rgba(31, 157, 242, 0.32);
+  --console-panel-bg: #0f141a;
+  --console-panel-border: rgba(255, 255, 255, 0.08);
+  --console-panel-text: #e7eef8;
+  --console-panel-muted: #8ea2b8;
+  --console-system: #72b8ff;
+  --console-stdout: #e7eef8;
+  --console-stderr: #ff9b9b;
   --card-bg-start: #fbfeff;
   --card-bg-end: #f0f9fa;
   --folder-card-bg-start: #ffffff;

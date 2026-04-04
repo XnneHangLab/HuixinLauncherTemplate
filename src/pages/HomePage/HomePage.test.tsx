@@ -2,16 +2,16 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { HomePage } from './HomePage';
-import { toggleLaunchButtonState, type LaunchButtonState } from '../../data/home';
+import { toggleLaunchState, type LaunchState } from '../../services/launcher/launcher';
 
 function HomePageHarness() {
-  const [launchState, setLaunchState] = useState<LaunchButtonState>('idle');
+  const [launchState, setLaunchState] = useState<LaunchState>('idle');
 
   return (
     <HomePage
       launchState={launchState}
       onToggleLaunchState={() =>
-        setLaunchState((currentState) => toggleLaunchButtonState(currentState))
+        setLaunchState((currentState) => toggleLaunchState(currentState))
       }
     />
   );

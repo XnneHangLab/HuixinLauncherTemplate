@@ -163,6 +163,9 @@ describe('AppShell', () => {
       'running',
     );
 
+    await user.click(screen.getByRole('button', { name: '控制台' }));
+    expect(screen.getByText('运行: 未配置命令')).toBeInTheDocument();
+
     await user.click(screen.getByRole('button', { name: '设置' }));
     await user.click(screen.getByRole('button', { name: '一键启动' }));
 

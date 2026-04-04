@@ -1,25 +1,38 @@
 import type { ReactElement } from 'react';
 import { HomePage } from '../pages/HomePage/HomePage';
+import { ConsolePage } from '../pages/ConsolePage/ConsolePage';
 import { PlaceholderPage } from '../pages/PlaceholderPage/PlaceholderPage';
 import { SettingsPage } from '../pages/SettingsPage/SettingsPage';
 import type { PageId } from '../data/nav';
-import type { LaunchButtonState } from '../data/home';
+import type {
+  ConsoleLogEntry,
+  LaunchState,
+} from '../services/launcher/launcher';
 
 interface RenderPageOptions {
-  launchState: LaunchButtonState;
+  launchState: LaunchState;
+  configuredCommand: string | null;
+  logs: ConsoleLogEntry[];
+  autoScroll: boolean;
+  wrapLines: boolean;
   onToggleLaunchState: () => void;
+  onSetAutoScroll: (next: boolean) => void;
+  onSetWrapLines: (next: boolean) => void;
+  onClearLogs: () => void;
+  onCopyLog: (text: string) => void;
+  onExportLogs: () => void;
 }
 
 export function renderPage(
   pageId: PageId,
-  { launchState, onToggleLaunchState }: RenderPageOptions,
+  options: RenderPageOptions,
 ): ReactElement {
   switch (pageId) {
     case 'home':
       return (
         <HomePage
-          launchState={launchState}
-          onToggleLaunchState={onToggleLaunchState}
+          launchState={options.launchState}
+          onToggleLaunchState={options.onToggleLaunchState}
         />
       );
     case 'settings':
@@ -68,9 +81,17 @@ export function renderPage(
       );
     case 'console':
       return (
-        <PlaceholderPage
-          title="控制台"
-          description="预留运行日志和命令输出视图。"
+        <ConsolePage
+          launchState={options.launchState}
+          configuredCommand={options.configuredCommand}
+          logs={options.logs}
+          autoScroll={options.autoScroll}
+          wrapLines={options.wrapLines}
+          onSetAutoScroll={options.onSetAutoScroll}
+          onSetWrapLines={options.onSetWrapLines}
+          onClearLogs={options.onClearLogs}
+          onCopyLog={options.onCopyLog}
+          onExportLogs={options.onExportLogs}
         />
       );
     default: {
