@@ -11,8 +11,8 @@
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.06);
   background:
-    radial-gradient(circle at 62% 46%, rgba(255, 182, 193, 0.42), transparent 10%),
-    linear-gradient(135deg, rgba(98, 147, 194, 0.88), rgba(60, 66, 99, 0.92) 44%, rgba(43, 48, 67, 0.98));
+    linear-gradient(135deg, rgba(14, 17, 24, 0.18), rgba(14, 17, 24, 0.42)),
+    url('../assets/home/hero-bg.png') center / cover no-repeat;
 }
 
 .home-page .hero::before,

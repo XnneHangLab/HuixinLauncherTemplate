@@ -13,9 +13,9 @@ export interface FolderItem {
 }
 
 export const heroCopy = {
-  eyebrow: 'Stable Diffusion WebUI',
-  title: '绘世 - 启动器',
-  description: '让 AI 与你一同创作，让画笔随心所欲！',
+  eyebrow: 'XnneHangLab Launcher Template',
+  title: '绘心',
+  description: '让 AI 更有温度，也更适合长期陪伴。',
 };
 
 export const heroConfetti: HeroConfettiPiece[] = [
