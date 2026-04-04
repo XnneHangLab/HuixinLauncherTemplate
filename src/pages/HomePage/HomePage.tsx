@@ -11,7 +11,7 @@ export function HomePage() {
 
       <div className="main-grid">
         <div>
-          <div className="section-title">文件夹</div>
+          <h2 className="section-title">文件夹</h2>
           <FolderGrid items={folders} />
 
           <div className="meta">
