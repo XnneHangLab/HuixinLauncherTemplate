@@ -1,16 +1,11 @@
-import type { ReactElement } from 'react';
+import { HomePage } from '../pages/HomePage/HomePage';
 import { PlaceholderPage } from '../pages/PlaceholderPage/PlaceholderPage';
 import type { PageId } from '../data/nav';
 
-export function renderPage(pageId: PageId): ReactElement {
+export function renderPage(pageId: PageId) {
   switch (pageId) {
     case 'home':
-      return (
-        <PlaceholderPage
-          title="一键启动"
-          description="首页完整复刻将在后续任务中接入。"
-        />
-      );
+      return <HomePage />;
     case 'settings':
       return (
         <PlaceholderPage
