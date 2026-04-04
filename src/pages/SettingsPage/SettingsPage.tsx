@@ -11,6 +11,7 @@ import {
   settingsTabs,
   type SettingsTabId,
 } from '../../data/settings';
+import '../../styles/settings.css';
 
 export function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTabId>('general');

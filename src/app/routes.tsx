@@ -1,9 +1,10 @@
+import type { ReactElement } from 'react';
 import { HomePage } from '../pages/HomePage/HomePage';
 import { PlaceholderPage } from '../pages/PlaceholderPage/PlaceholderPage';
 import { SettingsPage } from '../pages/SettingsPage/SettingsPage';
 import type { PageId } from '../data/nav';
 
-export function renderPage(pageId: PageId) {
+export function renderPage(pageId: PageId): ReactElement {
   switch (pageId) {
     case 'home':
       return <HomePage />;
@@ -65,5 +66,9 @@ export function renderPage(pageId: PageId) {
           description="预留运行日志和命令输出视图。"
         />
       );
+    default: {
+      const exhaustiveCheck: never = pageId;
+      throw new Error(`Unhandled page id: ${exhaustiveCheck}`);
+    }
   }
 }
