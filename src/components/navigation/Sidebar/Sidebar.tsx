@@ -20,6 +20,13 @@ export function Sidebar({
 }: SidebarProps) {
   const primaryItems = items.filter((item) => item.section === 'primary');
   const secondaryItems = items.filter((item) => item.section === 'secondary');
+  const handleSelect = (item: NavItemData) => {
+    if (item.type === 'action') {
+      onToggleTheme();
+      return;
+    }
+    onSelect(item.id);
+  };
 
   return (
     <aside className="sidebar">
@@ -34,31 +41,20 @@ export function Sidebar({
             key={item.id}
             item={item}
             active={item.id === activePage}
-            onSelect={onSelect}
+            onSelect={handleSelect}
           />
         ))}
 
         <div className="nav-spacer" />
 
-        {secondaryItems.map((item) => {
-          const isLightbulb = item.id === 'ideas';
-          const handleSelect = (id: PageId) => {
-            if (isLightbulb) {
-              onToggleTheme();
-              return;
-            }
-            onSelect(id);
-          };
-
-          return (
-            <NavItem
-              key={item.id}
-              item={item}
-              active={isLightbulb ? theme === 'day' : item.id === activePage}
-              onSelect={handleSelect}
-            />
-          );
-        })}
+        {secondaryItems.map((item) => (
+          <NavItem
+            key={item.id}
+            item={item}
+            active={item.type === 'action' ? theme === 'day' : item.id === activePage}
+            onSelect={handleSelect}
+          />
+        ))}
       </nav>
     </aside>
   );

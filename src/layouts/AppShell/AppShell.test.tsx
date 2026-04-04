@@ -115,6 +115,32 @@ describe('AppShell', () => {
     expect(lightbulb).toHaveAttribute('aria-pressed', 'true');
   });
 
+  it('keeps settings page active when clicking lightbulb and only toggles theme', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<App />);
+
+    await user.click(screen.getByRole('button', { name: '设置' }));
+
+    const settingsButton = screen.getByRole('button', { name: '设置' });
+    const lightbulb = screen.getByRole('button', { name: '灯泡' });
+
+    expect(settingsButton).toHaveAttribute('aria-pressed', 'true');
+    expect(
+      screen.getByRole('tab', { name: '一般设置', selected: true }),
+    ).toBeInTheDocument();
+
+    await user.click(lightbulb);
+
+    const root = container.querySelector('.launcher-root');
+
+    expect(settingsButton).toHaveAttribute('aria-pressed', 'true');
+    expect(
+      screen.getByRole('tab', { name: '一般设置', selected: true }),
+    ).toBeInTheDocument();
+    expect((root as Element).getAttribute('data-theme')).toBe('day');
+    expect(localStorage.getItem('xnnehanglab.theme')).toBe('day');
+  });
+
   it('restores the saved theme on first render', () => {
     localStorage.setItem('xnnehanglab.theme', 'day');
     const { container } = render(<App />);

@@ -52,13 +52,6 @@ export function renderPage(pageId: PageId): ReactElement {
           description="预留社区入口和外链跳转。"
         />
       );
-    case 'ideas':
-      return (
-        <PlaceholderPage
-          title="灯泡"
-          description="预留提示、公告和推荐信息。"
-        />
-      );
     case 'console':
       return (
         <PlaceholderPage

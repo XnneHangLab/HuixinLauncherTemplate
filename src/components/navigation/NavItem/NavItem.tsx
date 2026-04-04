@@ -1,9 +1,9 @@
-import type { NavItemData, PageId } from '../../../data/nav';
+import type { NavItemData } from '../../../data/nav';
 
 interface NavItemProps {
   item: NavItemData;
   active: boolean;
-  onSelect: (id: PageId) => void;
+  onSelect: (item: NavItemData) => void;
 }
 
 export function NavItem({ item, active, onSelect }: NavItemProps) {
@@ -12,7 +12,7 @@ export function NavItem({ item, active, onSelect }: NavItemProps) {
       type="button"
       className={`nav-item${active ? ' active' : ''}`}
       aria-pressed={active}
-      onClick={() => onSelect(item.id)}
+      onClick={() => onSelect(item)}
     >
       <span className="nav-icon" aria-hidden="true">
         {item.icon}
