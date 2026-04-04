@@ -9,7 +9,7 @@
   min-height: 246px;
   overflow: hidden;
   border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line);
   background:
     linear-gradient(180deg, var(--hero-overlay-start), var(--hero-overlay-end)),
     url('../assets/home/hero-bg.png') center / cover no-repeat;
@@ -116,7 +116,7 @@
 }
 
 .home-page .arrow {
-  color: #b0bccd;
+  color: var(--muted);
   font-size: 22px;
   opacity: 0.8;
   flex: none;
@@ -125,7 +125,7 @@
 .home-page .meta {
   margin-top: 18px;
   padding: 8px 2px 0;
-  color: #adb8c7;
+  color: var(--muted);
   font-size: 14px;
   line-height: 1.95;
 }
@@ -149,7 +149,7 @@
   margin: 0 0 16px;
   font-size: 14px;
   line-height: 1.8;
-  color: #c0cad8;
+  color: var(--muted);
 }
 
 .home-page .run-btn {

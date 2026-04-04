@@ -10,7 +10,7 @@
   display: flex;
   gap: 18px;
   padding: 2px 6px 0;
-  color: #d8e0ec;
+  color: var(--text);
   font-size: 15px;
   border-bottom: 1px solid var(--line);
 }
@@ -72,7 +72,7 @@
   gap: 20px;
   align-items: center;
   padding: 16px 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-top: 1px solid var(--line);
 }
 
 .settings-shell .setting-row:first-child {
@@ -183,7 +183,7 @@
 .settings-shell .about-card p {
   margin: 0 0 12px;
   line-height: 1.8;
-  color: #c0cad8;
+  color: var(--muted);
 }
 
 .settings-shell .about-card p:last-child {

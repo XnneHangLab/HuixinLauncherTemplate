@@ -27,6 +27,11 @@
   --input-bg: #1a212a;
   --input-border: rgba(121, 161, 221, 0.6);
   --input-text: #dce7f6;
+  --nav-hover-bg: rgba(255, 255, 255, 0.04);
+  --nav-active-bg-start: rgba(74, 144, 226, 0.14);
+  --nav-active-bg-end: rgba(74, 144, 226, 0.06);
+  --nav-active-border: rgba(74, 144, 226, 0.28);
+  --nav-active-inset: rgba(255, 255, 255, 0.03);
 }
 
 .launcher-root[data-theme='day'] {
@@ -57,4 +62,9 @@
   --input-bg: #ffffff;
   --input-border: rgba(59, 130, 246, 0.25);
   --input-text: #182231;
+  --nav-hover-bg: rgba(24, 34, 49, 0.05);
+  --nav-active-bg-start: rgba(59, 130, 246, 0.16);
+  --nav-active-bg-end: rgba(59, 130, 246, 0.08);
+  --nav-active-border: rgba(59, 130, 246, 0.28);
+  --nav-active-inset: rgba(255, 255, 255, 0.55);
 }

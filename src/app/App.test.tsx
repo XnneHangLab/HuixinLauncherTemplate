@@ -1,9 +1,11 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import App from './App';
+import '../styles/tokens.css';
 
 describe('App', () => {
   beforeEach(() => {
-    localStorage.setItem('xnnehanglab.theme', 'day');
+    localStorage.clear();
   });
 
   it('renders the launcher preview title', () => {
@@ -13,11 +15,37 @@ describe('App', () => {
   });
 
   it('applies day theme from storage to launcher root', () => {
-    const { container } = render(<App />);
+    localStorage.setItem('xnnehanglab.theme', 'day');
 
-    expect(container.querySelector('.launcher-root')).toHaveAttribute(
+    const { container } = render(<App />);
+    const launcherRoot = container.querySelector('.launcher-root');
+    const navHome = screen.getByRole('button', { name: '一键启动' });
+    const navStyles = getComputedStyle(navHome);
+    const rootStyles = getComputedStyle(launcherRoot as Element);
+
+    expect(launcherRoot).toHaveAttribute(
       'data-theme',
       'day',
     );
+    expect(rootStyles.getPropertyValue('--text').trim()).toBe('#182231');
+    expect(navStyles.color).toBe('var(--text)');
+  });
+
+  it('applies day input colors in settings page', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem('xnnehanglab.theme', 'day');
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: '设置' }));
+
+    const proxyInput = screen.getByLabelText('代理服务器地址');
+    const styles = getComputedStyle(proxyInput);
+    const launcherRoot = document.querySelector('.launcher-root');
+    const rootStyles = getComputedStyle(launcherRoot as Element);
+
+    expect(rootStyles.getPropertyValue('--input-bg').trim()).toBe('#ffffff');
+    expect(rootStyles.getPropertyValue('--input-text').trim()).toBe('#182231');
+    expect(styles.color).toBe('var(--input-text)');
   });
 });
