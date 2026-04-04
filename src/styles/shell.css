@@ -1,25 +1,20 @@
 .launcher-root {
+  width: 100%;
   min-height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 24px;
-  background:
-    radial-gradient(circle at 20% -10%, rgba(59, 130, 246, 0.14), transparent 28%),
-    radial-gradient(circle at 100% 0%, rgba(236, 72, 153, 0.08), transparent 24%),
-    linear-gradient(180deg, #0f1216 0%, #14181d 100%);
+  padding: 0;
+  background: #101419;
 }
 
 .app-shell {
-  width: min(1440px, 100%);
-  height: min(900px, calc(100vh - 48px));
+  width: 100%;
+  height: 100%;
   display: grid;
   grid-template-columns: var(--sidebar-w) 1fr;
   background: #101419;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 22px;
+  border: 0;
+  border-radius: 0;
   overflow: hidden;
-  box-shadow: var(--shadow);
+  box-shadow: none;
 }
 
 .sidebar {

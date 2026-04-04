@@ -6,7 +6,15 @@ describe('AppShell', () => {
   it('switches between nav pages and renders active page content', async () => {
     const user = userEvent.setup();
 
-    render(<App />);
+    const { container } = render(<App />);
+
+    const root = container.querySelector('.launcher-root');
+    const shell = container.querySelector('.app-shell');
+
+    expect(root).not.toBeNull();
+    expect(shell).not.toBeNull();
+    expect(getComputedStyle(root as Element).paddingTop).toBe('0px');
+    expect(getComputedStyle(shell as Element).borderTopWidth).toBe('0px');
 
     expect(
       screen.getByRole('navigation', { name: '主导航' }),
