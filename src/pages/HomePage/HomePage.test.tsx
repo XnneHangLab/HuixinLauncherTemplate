@@ -34,7 +34,14 @@ describe('HomePage', () => {
       screen.getByText('XnneHangLab Launcher Template'),
     ).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /打开 / })).toHaveLength(8);
-    expect(screen.getByText('启动器版本：2.6.17 Build 222')).toBeInTheDocument();
+    expect(
+      screen.getByText('启动器版本：绘心启动器 Preview'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        '绘心是 XnneHangLab 正在持续迭代的启动器产品，也会沉淀为可复用模板，后续会逐步扩展到语音、模型管理与控制台能力。',
+      ),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: /^▶ 一键启动$/ }),
     ).toBeInTheDocument();

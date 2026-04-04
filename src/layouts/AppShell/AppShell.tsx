@@ -69,7 +69,7 @@ export function AppShell() {
         />
 
         <main className="content-shell">
-          <Topbar title="UI 复刻预览" />
+          <Topbar />
           <section className="page-shell">
             {renderPage(activePage, {
               launchState,

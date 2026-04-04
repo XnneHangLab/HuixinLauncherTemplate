@@ -8,10 +8,13 @@ describe('App', () => {
     localStorage.clear();
   });
 
-  it('renders the launcher preview title', () => {
+  it('renders the launcher shell controls', () => {
     render(<App />);
 
-    expect(screen.getByText('UI 复刻预览')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '帮助' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('group', { name: '窗口控制' }),
+    ).toBeInTheDocument();
   });
 
   it('applies day theme from storage to launcher root', () => {
@@ -44,7 +47,7 @@ describe('App', () => {
     const launcherRoot = document.querySelector('.launcher-root');
     const rootStyles = getComputedStyle(launcherRoot as Element);
 
-    expect(rootStyles.getPropertyValue('--input-bg').trim()).toBe('#ffffff');
+    expect(rootStyles.getPropertyValue('--input-bg').trim()).toBe('#fcfeff');
     expect(rootStyles.getPropertyValue('--input-text').trim()).toBe('#182231');
     expect(styles.color).toBe('var(--input-text)');
   });
