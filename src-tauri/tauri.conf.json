@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "XnneHangLab Launcher Template",
+  "productName": "绘心启动器",
   "version": "0.1.0",
   "identifier": "com.xnnehanglab.launchertemplate",
   "build": {
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "XnneHangLab Launcher Template",
+        "title": "绘心启动器",
         "width": 1440,
         "height": 900,
         "minWidth": 1100,
