@@ -19,6 +19,10 @@ describe('AppShell', () => {
     expect(getComputedStyle(shell as Element).borderTopWidth).toBe('0px');
 
     expect(
+      screen.getByRole('img', { name: '绘心 Logo' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('绘心')).toBeInTheDocument();
+    expect(
       screen.getByRole('navigation', { name: '主导航' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '帮助' })).toBeInTheDocument();

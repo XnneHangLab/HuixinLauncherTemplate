@@ -33,21 +33,23 @@
 .brand {
   width: 100%;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 8px;
   margin-bottom: 8px;
   color: #fff;
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.2;
   opacity: 0.95;
+  text-align: center;
 }
 
-.brand-dot {
-  width: 14px;
-  height: 14px;
-  border-radius: 4px;
-  background: linear-gradient(135deg, #ff8fb1, #9b8cff);
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08) inset;
+.brand-logo {
+  width: 42px;
+  height: 42px;
+  display: block;
+  object-fit: contain;
 }
 
 .nav {

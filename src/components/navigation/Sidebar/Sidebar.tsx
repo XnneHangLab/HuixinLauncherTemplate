@@ -1,3 +1,4 @@
+import huixinLogo from '../../../assets/brand/huixin-logo.svg';
 import { NavItem } from '../NavItem/NavItem';
 import type { NavItemData, PageId } from '../../../data/nav';
 
@@ -14,8 +15,8 @@ export function Sidebar({ items, activePage, onSelect }: SidebarProps) {
   return (
     <aside className="sidebar">
       <div className="brand">
-        <span className="brand-dot" aria-hidden="true" />
-        <span>绘世 2.8.5</span>
+        <img className="brand-logo" src={huixinLogo} alt="绘心 Logo" />
+        <span>绘心</span>
       </div>
 
       <nav className="nav" aria-label="主导航">
