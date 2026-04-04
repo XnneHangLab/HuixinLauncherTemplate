@@ -2,6 +2,7 @@ import { FolderGrid } from '../../components/home/FolderGrid/FolderGrid';
 import { HeroBanner } from '../../components/home/HeroBanner/HeroBanner';
 import { NoticePanel } from '../../components/home/NoticePanel/NoticePanel';
 import { folders, notices, runButtonLabel, versionMeta } from '../../data/home';
+import '../../styles/home.css';
 
 export function HomePage() {
   return (
