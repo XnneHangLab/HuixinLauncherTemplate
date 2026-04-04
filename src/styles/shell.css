@@ -164,6 +164,11 @@
   opacity: 1;
 }
 
+.window-btn--close:hover {
+  background: rgba(232, 76, 76, 0.24);
+  color: #fff;
+}
+
 .page-shell {
   flex: 1;
   overflow: auto;

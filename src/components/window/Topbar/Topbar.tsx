@@ -8,7 +8,7 @@ export function Topbar({ title }: TopbarProps) {
   return (
     <header className="topbar">
       <div className="topbar-title" data-tauri-drag-region>
-        {title}
+        <span data-tauri-drag-region>{title}</span>
       </div>
       <div className="topbar-right">
         <button type="button" className="topbar-help" aria-label="帮助">
