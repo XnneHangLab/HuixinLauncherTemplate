@@ -37,6 +37,7 @@ export interface ManagedPath {
 
 export interface RuntimeInspection {
   runtimeDriver: RuntimeDriver;
+  pythonPath?: string;
   defaultBackend: string;
   environment: {
     mode: RuntimeMode;

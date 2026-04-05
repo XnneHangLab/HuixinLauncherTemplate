@@ -189,7 +189,7 @@ export function AppShell() {
               onDownloadGenieBase: handleDownloadGenieBase,
               onOpenPath: handleOpenManagedPath,
               runtimeDriver: inspection?.runtimeDriver ?? 'uv',
-              pythonPath: '',
+              pythonPath: inspection?.pythonPath ?? '',
               onSetAutoScroll: setAutoScroll,
               onSetWrapLines: setWrapLines,
               onClearLogs: handleClearLogs,

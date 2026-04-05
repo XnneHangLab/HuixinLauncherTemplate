@@ -9,9 +9,9 @@ import type { ConsoleLogEntry } from '../services/launcher/launcher';
 import type {
   ManagedFolderItem,
   RuntimeInspection,
+  RuntimeDriver,
   RuntimeTaskRecord,
 } from '../services/runtime/runtime';
-import { getQueueSummary } from '../services/runtime/runtime';
 
 interface RenderPageOptions {
   inspection: RuntimeInspection | null;
@@ -23,7 +23,7 @@ interface RenderPageOptions {
   onOpenModels: () => void;
   onDownloadGenieBase: () => void;
   onOpenPath: (pathKey: string) => void;
-  runtimeDriver: 'uv';
+  runtimeDriver: RuntimeDriver;
   pythonPath: string;
   onSetAutoScroll: (next: boolean) => void;
   onSetWrapLines: (next: boolean) => void;
@@ -101,12 +101,8 @@ export function renderPage(
     case 'console':
       return (
         <ConsolePage
-          launchState={getQueueSummary(options.tasks).queueLength > 0 ? 'running' : 'idle'}
-          configuredCommand={
-            options.inspection
-              ? `${options.runtimeDriver} run python -m xnnehanglab_tts.cli ${options.inspection.defaultBackend}`
-              : null
-          }
+          runtimeDriver={options.runtimeDriver}
+          tasks={options.tasks}
           logs={options.logs}
           autoScroll={options.autoScroll}
           wrapLines={options.wrapLines}

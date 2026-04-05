@@ -17,6 +17,7 @@ vi.mock('../../services/runtime/bridge', async () => {
     ...actual,
     inspectRuntime: vi.fn().mockResolvedValue({
       runtimeDriver: 'uv',
+      pythonPath: '/repo/.venv/bin/python',
       defaultBackend: 'genie-tts',
       environment: {
         mode: 'cpu',
@@ -119,8 +120,13 @@ describe('AppShell', () => {
     await user.click(screen.getByRole('button', { name: '打开 Genie 基础资源' }));
     expect(runtimeBridge.openManagedPath).toHaveBeenCalledWith('genieBase');
 
+    await user.click(screen.getByRole('button', { name: '控制台' }));
+    expect(screen.getByText('运行驱动 uv')).toBeInTheDocument();
+    expect(screen.getByText('当前任务 GenieData 基础资源')).toBeInTheDocument();
+
     await user.click(screen.getByRole('button', { name: '设置' }));
     expect(screen.getByDisplayValue('uv')).toBeDisabled();
+    expect(screen.getByDisplayValue('/repo/.venv/bin/python')).toBeDisabled();
   });
 
   it('toggles theme from the lightbulb action and persists the selection', async () => {
