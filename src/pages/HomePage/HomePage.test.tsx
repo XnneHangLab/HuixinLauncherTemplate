@@ -2,40 +2,9 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import { HomePage } from './HomePage';
-import type {
-  ManagedFolderItem,
-  RuntimeInspection,
-  RuntimeTaskRecord,
-} from '../../services/runtime/runtime';
+import type { ManagedFolderItem } from '../../services/runtime/runtime';
 
 describe('HomePage', () => {
-  const inspection: RuntimeInspection = {
-    runtimeDriver: 'uv',
-    defaultBackend: 'genie-tts',
-    environment: {
-      mode: 'cpu',
-      torchAvailable: true,
-      torchVersion: '2.6.0+cpu',
-      cudaAvailable: false,
-      issues: [],
-    },
-    availableBackends: ['genie-tts'],
-    managedPaths: [
-      { key: 'workspace', label: '根目录', path: '/repo' },
-      { key: 'genieBase', label: 'Genie 基础资源', path: '/repo/models/genie/base' },
-    ],
-    resources: {
-      'genie-base': {
-        key: 'genie-base',
-        label: 'GenieData 基础资源',
-        status: 'missing',
-        path: '/repo/models/genie/base/GenieData',
-        missingPaths: ['speaker_encoder.onnx'],
-      },
-    },
-    latestMessage: '运行驱动 uv，当前环境 CPU',
-  };
-
   const folders: ManagedFolderItem[] = [
     { key: 'workspace', title: '根目录', path: '/repo', icon: '📁' },
     {
@@ -46,29 +15,12 @@ describe('HomePage', () => {
     },
   ];
 
-  const tasks: RuntimeTaskRecord[] = [
-    {
-      taskId: 'task-1',
-      target: 'genie-base',
-      label: 'GenieData 基础资源',
-      status: 'downloading',
-      message: '正在下载',
-      progressCurrent: 1,
-      progressTotal: 3,
-      updatedAt: '1712300001',
-    },
-  ];
-
-  it('renders runtime summary, managed folders, and notice panel', () => {
+  it('renders managed folders and notice panel', () => {
     render(
       <HomePage
-        inspection={inspection}
-        tasks={tasks}
         folders={folders}
-        latestMessage="运行驱动 uv，当前环境 CPU"
         onOpenPath={() => undefined}
         onOpenModels={() => undefined}
-        runtimeMode="cpu"
       />,
     );
 
@@ -103,13 +55,9 @@ describe('HomePage', () => {
 
     render(
       <HomePage
-        inspection={inspection}
-        tasks={tasks}
         folders={folders}
-        latestMessage="运行驱动 uv，当前环境 CPU"
         onOpenPath={onOpenPath}
         onOpenModels={onOpenModels}
-        runtimeMode="cpu"
       />,
     );
 

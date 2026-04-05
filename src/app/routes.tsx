@@ -50,13 +50,9 @@ export function renderPage(
     case 'home':
       return (
         <HomePage
-          inspection={options.inspection}
-          tasks={options.tasks}
           folders={options.folders}
-          latestMessage={options.latestMessage}
           onOpenPath={options.onOpenPath}
           onOpenModels={options.onOpenModels}
-          runtimeMode={options.runtimeMode}
         />
       );
     case 'settings':

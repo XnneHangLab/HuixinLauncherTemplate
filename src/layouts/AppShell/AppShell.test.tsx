@@ -178,15 +178,8 @@ describe('AppShell', () => {
 
     render(<App />);
 
-    // latestMessage shows in NoticePanel status bar
-    await waitFor(() =>
-      expect(screen.getByText('torch 不可用')).toBeInTheDocument(),
-    );
-
-    expect(runtimeBridge.inspectRuntime).not.toHaveBeenCalled();
-
     await user.click(screen.getByRole('button', { name: '模型管理' }));
-    const downloadBtns = screen.getAllByRole('button', { name: '下载' });
+    const downloadBtns = await screen.findAllByRole('button', { name: '下载' });
     for (const btn of downloadBtns) {
       expect(btn).toBeDisabled();
     }
