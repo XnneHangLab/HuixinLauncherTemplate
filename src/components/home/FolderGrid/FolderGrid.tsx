@@ -34,7 +34,7 @@ export function FolderGrid({ items, onOpen }: FolderGridProps) {
             </span>
             <span className="folder-text">
               <span className="folder-title">{item.title}</span>
-              <span className="folder-sub">环境就绪后可用</span>
+              <span className="folder-sub">{item.path}</span>
             </span>
           </span>
           <span className="arrow" aria-hidden="true">›</span>

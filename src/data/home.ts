@@ -9,6 +9,7 @@ export interface HeroConfettiPiece {
 export interface PlaceholderFolderItem {
   key: string;
   title: string;
+  path: string;
   icon: string;
 }
 
@@ -40,9 +41,12 @@ export const notices = [
 ];
 
 export const placeholderFolders: PlaceholderFolderItem[] = [
-  { key: 'workspace', title: '根目录', icon: '📁' },
-  { key: 'models', title: '模型目录', icon: '◫' },
-  { key: 'genieBase', title: 'Genie 基础资源', icon: '🧠' },
-  { key: 'modelscopeCache', title: 'ModelScope 缓存', icon: '⬇' },
-  { key: 'downloadLogs', title: '下载日志', icon: '🧾' },
+  { key: 'workspace', title: '根目录', path: '.', icon: '📁' },
+  { key: 'extensions', title: '扩展文件夹', path: 'extensions', icon: '🧷' },
+  { key: 'tmp', title: '临时文件夹', path: 'tmp', icon: '🧹' },
+  { key: 'extras-images', title: '超分输出', path: 'extras-images', icon: '⊞' },
+  { key: 'txt2img-grids', title: '文生图（网格）', path: 'txt2img-grids', icon: '🖹' },
+  { key: 'txt2img-images', title: '文生图（单图）', path: 'txt2img-images', icon: '📄' },
+  { key: 'img2img-grids', title: '图生图（网格）', path: 'img2img-grids', icon: '🖼' },
+  { key: 'img2img-images', title: '图生图（单图）', path: 'img2img-images', icon: '▣' },
 ];
