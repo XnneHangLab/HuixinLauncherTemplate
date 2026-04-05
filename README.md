@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://xnnehang.top/">
-    <img src="./src/assets/brand/huixin-logo.svg" alt="绘心 Logo" width="270" height="180" />
+    <img src="./assets/logo-full.jpg" alt="绘心 Logo" width="270" />
   </a>
 </p>
 
