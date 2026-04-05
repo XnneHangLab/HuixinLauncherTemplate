@@ -5,11 +5,17 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use super::models::{RuntimeTaskRecord, TaskStatus};
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct QueuedTask {
+    pub task_id: String,
+    pub target: String,
+}
+
 #[derive(Default)]
 pub struct QueueState {
     next_id: u64,
     pub tasks: Vec<RuntimeTaskRecord>,
-    pub waiting: VecDeque<String>,
+    pub waiting: VecDeque<QueuedTask>,
     pub worker_running: bool,
 }
 
@@ -17,6 +23,7 @@ impl QueueState {
     pub fn enqueue(&mut self, target: String, label: String) -> RuntimeTaskRecord {
         self.next_id += 1;
         let task_id = format!("task-{}", self.next_id);
+        let queued_target = target.clone();
         let task = RuntimeTaskRecord {
             task_id: task_id.clone(),
             target,
@@ -27,13 +34,36 @@ impl QueueState {
             progress_total: 3,
             updated_at: current_timestamp(),
         };
-        self.waiting.push_back(task_id.clone());
+        self.waiting.push_back(QueuedTask {
+            task_id: task_id.clone(),
+            target: queued_target,
+        });
         self.tasks.push(task.clone());
         task
     }
 
-    pub fn next_queued_task_id(&mut self) -> Option<String> {
-        self.waiting.pop_front()
+    pub fn enqueue_with_worker_control(
+        &mut self,
+        target: String,
+        label: String,
+    ) -> (RuntimeTaskRecord, bool) {
+        let task = self.enqueue(target, label);
+        if self.worker_running {
+            (task, false)
+        } else {
+            self.worker_running = true;
+            (task, true)
+        }
+    }
+
+    pub fn take_next_task_or_mark_idle(&mut self) -> Option<QueuedTask> {
+        match self.waiting.pop_front() {
+            Some(task) => Some(task),
+            None => {
+                self.worker_running = false;
+                None
+            }
+        }
     }
 
     pub fn apply_update(
@@ -124,5 +154,37 @@ mod tests {
         assert_eq!(current.status, TaskStatus::Downloading);
         assert_eq!(current.progress_current, 1);
         assert_eq!(current.progress_total, 3);
+    }
+
+    #[test]
+    fn take_next_task_or_mark_idle_allows_follow_up_enqueue_to_restart_worker() {
+        let mut queue = QueueState::default();
+        queue.worker_running = true;
+
+        let next = queue.take_next_task_or_mark_idle();
+        assert!(next.is_none());
+        assert!(!queue.worker_running);
+
+        let (_task, should_start_worker) = queue.enqueue_with_worker_control(
+            "genie-base".to_string(),
+            "GenieData 基础资源".to_string(),
+        );
+
+        assert!(should_start_worker);
+        assert!(queue.worker_running);
+    }
+
+    #[test]
+    fn take_next_task_or_mark_idle_keeps_enqueued_target() {
+        let mut queue = QueueState::default();
+        let (task, started_worker) = queue.enqueue_with_worker_control(
+            "genie-base".to_string(),
+            "GenieData 基础资源".to_string(),
+        );
+        assert!(started_worker);
+
+        let next = queue.take_next_task_or_mark_idle().unwrap();
+        assert_eq!(next.task_id, task.task_id);
+        assert_eq!(next.target, "genie-base");
     }
 }

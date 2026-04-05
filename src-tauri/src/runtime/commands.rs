@@ -1,6 +1,8 @@
 use tauri::{AppHandle, State};
 
-use super::process::{drain_download_queue, open_path, run_inspect_command, write_console_log};
+use super::process::{
+    drain_download_queue, open_path, resolve_managed_path, run_inspect_command, write_console_log,
+};
 use super::state::{resolve_workspace_root, RuntimeState};
 
 #[tauri::command]
@@ -14,25 +16,23 @@ pub fn enqueue_download(
     state: State<'_, RuntimeState>,
     target: String,
 ) -> Result<serde_json::Value, String> {
-    let task = {
+    let (target, label) = validate_download_target(&target)?;
+    let (task, should_spawn_worker) = {
         let mut queue = state.queue.lock().unwrap();
-        let task = queue.enqueue(target, "GenieData 基础资源".to_string());
-        if queue.worker_running {
-            return serde_json::to_value(task).map_err(|error| error.to_string());
-        }
-        queue.worker_running = true;
-        task
+        queue.enqueue_with_worker_control(target.to_string(), label.to_string())
     };
 
-    let app_handle = app.clone();
-    let runtime_state = RuntimeState {
-        workspace_root: state.workspace_root.clone(),
-        queue: state.queue.clone(),
-    };
+    if should_spawn_worker {
+        let app_handle = app.clone();
+        let runtime_state = RuntimeState {
+            workspace_root: state.workspace_root.clone(),
+            queue: state.queue.clone(),
+        };
 
-    tauri::async_runtime::spawn(async move {
-        drain_download_queue(app_handle.clone(), runtime_state);
-    });
+        tauri::async_runtime::spawn(async move {
+            drain_download_queue(app_handle.clone(), runtime_state);
+        });
+    }
 
     serde_json::to_value(task).map_err(|error| error.to_string())
 }
@@ -45,18 +45,7 @@ pub fn list_download_tasks(state: State<'_, RuntimeState>) -> Result<serde_json:
 
 #[tauri::command]
 pub fn open_managed_path(state: State<'_, RuntimeState>, path_key: String) -> Result<(), String> {
-    let path = match path_key.as_str() {
-        "workspace" => state.workspace_root.clone(),
-        "models" => state.workspace_root.join("models"),
-        "genieBase" => state.workspace_root.join("models").join("genie").join("base"),
-        "modelscopeCache" => state
-            .workspace_root
-            .join("models")
-            .join("cache")
-            .join("modelscope"),
-        "downloadLogs" => state.workspace_root.join("logs").join("downloads"),
-        other => return Err(format!("unsupported managed path key: {other}")),
-    };
+    let path = resolve_managed_path(&state.workspace_root, &path_key)?;
     open_path(&path)
 }
 
@@ -65,10 +54,18 @@ pub fn export_console_logs(
     state: State<'_, RuntimeState>,
     contents: String,
 ) -> Result<String, String> {
-    let path = write_console_log(&state.workspace_root, &contents)?;
+    let log_dir = resolve_managed_path(&state.workspace_root, "downloadLogs")?;
+    let path = write_console_log(&log_dir, &contents)?;
     Ok(path.display().to_string())
 }
 
 pub fn build_runtime_state() -> Result<RuntimeState, String> {
     Ok(RuntimeState::new(resolve_workspace_root()?))
+}
+
+fn validate_download_target(target: &str) -> Result<(&'static str, &'static str), String> {
+    match target {
+        "genie-base" => Ok(("genie-base", "GenieData 基础资源")),
+        other => Err(format!("unsupported download target: {other}")),
+    }
 }
