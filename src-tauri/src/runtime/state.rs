@@ -1,0 +1,128 @@
+use std::collections::VecDeque;
+use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
+use std::time::{SystemTime, UNIX_EPOCH};
+
+use super::models::{RuntimeTaskRecord, TaskStatus};
+
+#[derive(Default)]
+pub struct QueueState {
+    next_id: u64,
+    pub tasks: Vec<RuntimeTaskRecord>,
+    pub waiting: VecDeque<String>,
+    pub worker_running: bool,
+}
+
+impl QueueState {
+    pub fn enqueue(&mut self, target: String, label: String) -> RuntimeTaskRecord {
+        self.next_id += 1;
+        let task_id = format!("task-{}", self.next_id);
+        let task = RuntimeTaskRecord {
+            task_id: task_id.clone(),
+            target,
+            label,
+            status: TaskStatus::Queued,
+            message: "已进入下载队列".to_string(),
+            progress_current: 0,
+            progress_total: 3,
+            updated_at: current_timestamp(),
+        };
+        self.waiting.push_back(task_id.clone());
+        self.tasks.push(task.clone());
+        task
+    }
+
+    pub fn next_queued_task_id(&mut self) -> Option<String> {
+        self.waiting.pop_front()
+    }
+
+    pub fn apply_update(
+        &mut self,
+        task_id: &str,
+        status: TaskStatus,
+        message: String,
+        progress_current: u64,
+        progress_total: u64,
+    ) {
+        if let Some(task) = self.tasks.iter_mut().find(|item| item.task_id == task_id) {
+            task.status = status;
+            task.message = message;
+            task.progress_current = progress_current;
+            task.progress_total = progress_total;
+            task.updated_at = current_timestamp();
+        }
+    }
+}
+
+pub struct RuntimeState {
+    pub workspace_root: PathBuf,
+    pub queue: Arc<Mutex<QueueState>>,
+}
+
+impl RuntimeState {
+    pub fn new(workspace_root: PathBuf) -> Self {
+        Self {
+            workspace_root,
+            queue: Arc::new(Mutex::new(QueueState::default())),
+        }
+    }
+}
+
+pub fn current_timestamp() -> String {
+    let seconds = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    seconds.to_string()
+}
+
+pub fn resolve_workspace_root() -> Result<PathBuf, String> {
+    if let Ok(value) = std::env::var("XH_VOICE_WORKSPACE_ROOT") {
+        return Ok(PathBuf::from(value));
+    }
+
+    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    manifest_dir
+        .parent()
+        .and_then(|path| path.parent())
+        .map(|path| path.to_path_buf())
+        .ok_or_else(|| "failed to resolve workspace root from launcher/src-tauri".to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{QueueState, TaskStatus};
+
+    #[test]
+    fn enqueue_adds_a_task_and_keeps_it_queued() {
+        let mut queue = QueueState::default();
+        let task = queue.enqueue("genie-base".to_string(), "GenieData 基础资源".to_string());
+
+        assert_eq!(task.status, TaskStatus::Queued);
+        assert_eq!(queue.tasks.len(), 1);
+        assert_eq!(queue.tasks[0].target, "genie-base");
+    }
+
+    #[test]
+    fn apply_status_updates_existing_task_progress() {
+        let mut queue = QueueState::default();
+        let task = queue.enqueue("genie-base".to_string(), "GenieData 基础资源".to_string());
+
+        queue.apply_update(
+            &task.task_id,
+            TaskStatus::Downloading,
+            "正在下载".to_string(),
+            1,
+            3,
+        );
+
+        let current = queue
+            .tasks
+            .iter()
+            .find(|item| item.task_id == task.task_id)
+            .unwrap();
+        assert_eq!(current.status, TaskStatus::Downloading);
+        assert_eq!(current.progress_current, 1);
+        assert_eq!(current.progress_total, 3);
+    }
+}
