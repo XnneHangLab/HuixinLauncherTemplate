@@ -156,6 +156,35 @@ export function AppShell() {
     }
   }
 
+  async function handleDownloadGsvLite() {
+    if (!isEnvironmentReady(environmentProbe)) {
+      setLogs((current) => [
+        ...current,
+        createConsoleLog('stderr', '环境未就绪，已禁止执行运行时脚本'),
+      ]);
+      return;
+    }
+
+    try {
+      const task = await enqueueDownload('gsv-lite');
+      setTasks((current) => {
+        const next = current.filter((item) => item.taskId !== task.taskId);
+        next.push(task);
+        return next;
+      });
+      setLogs((current) => [
+        ...current,
+        createConsoleLog('system', `${task.label}: ${task.message}`),
+      ]);
+      setActivePage('models');
+    } catch (error) {
+      setLogs((current) => [
+        ...current,
+        createConsoleLog('stderr', `创建下载任务失败: ${toErrorMessage(error)}`),
+      ]);
+    }
+  }
+
   async function handleWorkspaceProbe(nextProbe: EnvironmentProbe) {
     setEnvironmentProbe(nextProbe);
     setInspection(null);
@@ -266,6 +295,7 @@ export function AppShell() {
               latestMessage,
               onOpenModels: () => setActivePage('models'),
               onDownloadGenieBase: handleDownloadGenieBase,
+              onDownloadGsvLite: handleDownloadGsvLite,
               onOpenPath: handleOpenManagedPath,
               runtimeDriver: inspection?.runtimeDriver ?? 'uv',
               runtimeMode,

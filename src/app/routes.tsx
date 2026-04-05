@@ -24,6 +24,7 @@ interface RenderPageOptions {
   latestMessage: string;
   onOpenModels: () => void;
   onDownloadGenieBase: () => void;
+  onDownloadGsvLite: () => void;
   onOpenPath: (pathKey: string) => void;
   runtimeDriver: RuntimeDriver;
   runtimeMode: string;
@@ -61,7 +62,6 @@ export function renderPage(
     case 'settings':
       return (
         <SettingsPage
-          runtimeDriver={options.runtimeDriver}
           workspaceRoot={options.workspaceRoot}
           workspaceLocked={options.workspaceLocked}
           environmentProbe={options.environmentProbe}
@@ -95,9 +95,10 @@ export function renderPage(
       return (
         <ModelsPage
           inspection={options.inspection}
+          environmentProbe={options.environmentProbe}
           tasks={options.tasks}
           onDownloadGenieBase={options.onDownloadGenieBase}
-          onOpenPath={options.onOpenPath}
+          onDownloadGsvLite={options.onDownloadGsvLite}
           scriptsReady={options.scriptsReady}
         />
       );

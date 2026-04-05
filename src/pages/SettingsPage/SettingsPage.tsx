@@ -8,18 +8,15 @@ import {
   mirrorSettings,
   preferenceSettings,
   proxyDefaults,
-  runtimeSettings,
   settingsTabs,
   type SettingsTabId,
 } from '../../data/settings';
 import type {
   EnvironmentProbe,
-  RuntimeDriver,
 } from '../../services/runtime/runtime';
 import '../../styles/settings.css';
 
 interface SettingsPageProps {
-  runtimeDriver: RuntimeDriver;
   workspaceRoot: string;
   workspaceLocked: boolean;
   environmentProbe: EnvironmentProbe | null;
@@ -29,7 +26,6 @@ interface SettingsPageProps {
 }
 
 export function SettingsPage({
-  runtimeDriver,
   workspaceRoot,
   workspaceLocked,
   environmentProbe,
@@ -55,9 +51,18 @@ export function SettingsPage({
       preferenceSettings.map((item) => [item.id, item.defaultValue]),
     ) as Record<string, boolean>,
   );
+
   const environmentLabel = environmentProbe
     ? formatEnvironmentStatus(environmentProbe.status)
     : '正在检测';
+
+  const envReady =
+    environmentProbe?.status === 'torch-cpu-ready' ||
+    environmentProbe?.status === 'torch-gpu-ready';
+
+  const driverLabel = environmentProbe?.status === 'uv-unavailable'
+    ? 'uv 不可用'
+    : 'uv';
 
   return (
     <div className="settings-shell">
@@ -74,22 +79,22 @@ export function SettingsPage({
             role="tabpanel"
             aria-labelledby="settings-tab-general"
           >
-            <div className="group-title group-title--standalone">运行设置</div>
+            <div className="group-title group-title--standalone">工作目录</div>
 
             <SettingCard>
               <SettingRow
-                name={runtimeSettings.workspaceRootLabel}
+                name="工作目录"
                 description={
                   workspaceLocked
-                    ? '当前有任务运行，禁止切换工作目录'
-                    : '切换后会立刻重新探测 uv / Python / torch 环境'
+                    ? '有任务进行中，暂时锁定'
+                    : '切换后立即重新检测运行环境'
                 }
                 icon="📂"
               >
                 <div className="workspace-actions">
                   <input
                     className="proxy-input workspace-input"
-                    aria-label={runtimeSettings.workspaceRootLabel}
+                    aria-label="工作目录路径"
                     value={workspaceRoot}
                     disabled
                     readOnly
@@ -97,67 +102,51 @@ export function SettingsPage({
                   <button
                     type="button"
                     className="workspace-button"
-                    onClick={onUseRepoWorkspaceRoot}
-                    disabled={workspaceLocked}
-                  >
-                    使用当前项目目录
-                  </button>
-                  <button
-                    type="button"
-                    className="workspace-button"
                     onClick={onChooseWorkspaceRoot}
                     disabled={workspaceLocked}
                   >
-                    选择工作目录
+                    更改目录
+                  </button>
+                  <button
+                    type="button"
+                    className="workspace-button workspace-button--secondary"
+                    onClick={onUseRepoWorkspaceRoot}
+                    disabled={workspaceLocked}
+                  >
+                    重置为项目目录
                   </button>
                 </div>
               </SettingRow>
-
-              <SettingRow
-                name={runtimeSettings.environmentStatusLabel}
-                description={environmentProbe?.message ?? '正在检测 uv / Python / torch'}
-                icon="◎"
-              >
-                <input
-                  className="proxy-input"
-                  aria-label={runtimeSettings.environmentStatusLabel}
-                  value={environmentLabel}
-                  disabled
-                  readOnly
-                />
-              </SettingRow>
-
-              <SettingRow
-                name={runtimeSettings.driverLabel}
-                description="阶段一固定通过 uv 驱动运行时"
-                icon="Uv"
-              >
-                <input
-                  className="proxy-input"
-                  aria-label={runtimeSettings.driverLabel}
-                  value={runtimeDriver}
-                  disabled
-                  readOnly
-                />
-              </SettingRow>
-
-              <SettingRow
-                name={runtimeSettings.pythonPathLabel}
-                description="后续按运行驱动扩展显式 Python 路径"
-                icon="Py"
-              >
-                <input
-                  className="proxy-input"
-                  aria-label={runtimeSettings.pythonPathLabel}
-                  value={pythonPath}
-                  placeholder={runtimeSettings.pythonPathPlaceholder}
-                  disabled
-                  readOnly
-                />
-              </SettingRow>
             </SettingCard>
 
-            <div className="group-title group-title--standalone">网络设置</div>
+            <div className="group-title">运行环境</div>
+
+            <div className="env-info-card">
+              <div className="env-info-row">
+                <span className="env-info-label">环境状态</span>
+                <span className={`env-info-badge ${envReady ? 'env-info-badge--ready' : 'env-info-badge--warn'}`}>
+                  {environmentLabel}
+                </span>
+              </div>
+              {environmentProbe?.message ? (
+                <div className="env-info-row">
+                  <span className="env-info-label">详情</span>
+                  <span className="env-info-value">{environmentProbe.message}</span>
+                </div>
+              ) : null}
+              <div className="env-info-row">
+                <span className="env-info-label">运行驱动</span>
+                <span className="env-info-value env-info-mono">{driverLabel}</span>
+              </div>
+              {pythonPath ? (
+                <div className="env-info-row">
+                  <span className="env-info-label">Python 路径</span>
+                  <span className="env-info-value env-info-mono env-info-path">{pythonPath}</span>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="group-title">网络设置</div>
 
             <SettingCard>
               <SettingRow
@@ -246,7 +235,7 @@ export function SettingsPage({
               ))}
             </SettingCard>
 
-            <div className="group-title group-title--standalone">偏好设置</div>
+            <div className="group-title">偏好设置</div>
 
             <SettingCard>
               {preferenceSettings.map((item) => (
@@ -301,9 +290,9 @@ function formatEnvironmentStatus(status: EnvironmentProbe['status']) {
     case 'torch-unavailable':
       return 'torch 不可用';
     case 'torch-cpu-ready':
-      return 'torch CPU 就绪';
+      return 'CPU 就绪';
     case 'torch-gpu-ready':
-      return 'torch GPU 就绪';
+      return 'GPU 就绪';
     default:
       return status;
   }

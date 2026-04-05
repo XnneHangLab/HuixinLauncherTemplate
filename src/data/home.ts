@@ -6,6 +6,12 @@ export interface HeroConfettiPiece {
   width?: string;
 }
 
+export interface PlaceholderFolderItem {
+  key: string;
+  title: string;
+  icon: string;
+}
+
 export const heroCopy = {
   eyebrow: 'XnneHangLab Launcher Template',
   title: '绘心 - 启动器',
@@ -31,4 +37,12 @@ export const notices = [
   '当前阶段优先接入 GenieData 下载、环境识别和日志链路。',
   'CPU 环境仅开放 Genie-TTS 基础资源链路，GPU 环境在后续阶段再扩更多后端。',
   '模型下载进入串行队列后，可在模型管理页查看详情，在控制台页查看详细日志。',
+];
+
+export const placeholderFolders: PlaceholderFolderItem[] = [
+  { key: 'workspace', title: '根目录', icon: '📁' },
+  { key: 'models', title: '模型目录', icon: '◫' },
+  { key: 'genieBase', title: 'Genie 基础资源', icon: '🧠' },
+  { key: 'modelscopeCache', title: 'ModelScope 缓存', icon: '⬇' },
+  { key: 'downloadLogs', title: '下载日志', icon: '🧾' },
 ];

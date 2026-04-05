@@ -118,6 +118,7 @@ pub fn build_runtime_state() -> Result<RuntimeState, String> {
 fn validate_download_target(target: &str) -> Result<(&'static str, &'static str), String> {
     match target {
         "genie-base" => Ok(("genie-base", "GenieData 基础资源")),
+        "gsv-lite" => Ok(("gsv-lite", "GSV-Lite 数据包")),
         other => Err(format!("unsupported download target: {other}")),
     }
 }

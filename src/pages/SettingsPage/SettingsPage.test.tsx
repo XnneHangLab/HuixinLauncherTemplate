@@ -11,7 +11,6 @@ describe('SettingsPage', () => {
 
     render(
       <SettingsPage
-        runtimeDriver="uv"
         workspaceRoot="/repo"
         workspaceLocked={false}
         environmentProbe={{
@@ -42,20 +41,12 @@ describe('SettingsPage', () => {
       'aria-controls',
       'settings-panel-general',
     );
-    expect(screen.getByRole('tab', { name: '一般设置' })).toHaveAttribute(
-      'tabindex',
-      '0',
-    );
     expect(screen.getByRole('tabpanel', { name: '一般设置' })).toHaveAttribute(
       'id',
       'settings-panel-general',
     );
-    expect(screen.getByLabelText('运行驱动')).toHaveValue('uv');
-    expect(screen.getByLabelText('运行驱动')).toBeDisabled();
-    expect(screen.getByLabelText('工作目录')).toHaveValue('/repo');
-    expect(screen.getByLabelText('环境状态')).toHaveValue('torch CPU 就绪');
-    expect(screen.getByLabelText('Python 路径')).toHaveValue('');
-    expect(screen.getByLabelText('Python 路径')).toBeDisabled();
+    expect(screen.getByLabelText('工作目录路径')).toHaveValue('/repo');
+    expect(screen.getByText('CPU 就绪')).toBeInTheDocument();
     expect(screen.getByLabelText('代理服务器地址')).toHaveValue(
       'http://127.0.0.1:xxxx',
     );
@@ -63,21 +54,13 @@ describe('SettingsPage', () => {
       screen.getByRole('button', { name: '将代理应用到 Git' }),
     ).toHaveAttribute('aria-pressed', 'true');
 
-    await user.click(screen.getByRole('button', { name: '使用当前项目目录' }));
-    expect(onUseRepoWorkspaceRoot).toHaveBeenCalledTimes(1);
-
-    await user.click(screen.getByRole('button', { name: '选择工作目录' }));
+    await user.click(screen.getByRole('button', { name: '更改目录' }));
     expect(onChooseWorkspaceRoot).toHaveBeenCalledTimes(1);
 
+    await user.click(screen.getByRole('button', { name: '重置为项目目录' }));
+    expect(onUseRepoWorkspaceRoot).toHaveBeenCalledTimes(1);
+
     await user.click(screen.getByRole('tab', { name: '关于' }));
-    expect(screen.getByRole('tab', { name: '关于' })).toHaveAttribute(
-      'tabindex',
-      '0',
-    );
-    expect(screen.getByRole('tab', { name: '一般设置' })).toHaveAttribute(
-      'tabindex',
-      '-1',
-    );
     expect(screen.getByRole('tabpanel', { name: '关于' })).toHaveAttribute(
       'id',
       'settings-panel-about',
@@ -90,7 +73,6 @@ describe('SettingsPage', () => {
   it('disables workspace switching while queue is active', () => {
     render(
       <SettingsPage
-        runtimeDriver="uv"
         workspaceRoot="/repo"
         workspaceLocked
         environmentProbe={{
@@ -110,7 +92,7 @@ describe('SettingsPage', () => {
       />,
     );
 
-    expect(screen.getByRole('button', { name: '使用当前项目目录' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: '选择工作目录' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '更改目录' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '重置为项目目录' })).toBeDisabled();
   });
 });

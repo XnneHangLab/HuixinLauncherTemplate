@@ -64,6 +64,13 @@ vi.mock('../../services/runtime/bridge', async () => {
           path: '/repo/models/genie/base/GenieData',
           missingPaths: ['speaker_encoder.onnx'],
         },
+        'gsv-lite': {
+          key: 'gsv-lite',
+          label: 'GSV-Lite 数据包',
+          status: 'missing',
+          path: '/repo/models/GSVLiteData',
+          missingPaths: ['chinese-hubert-base'],
+        },
       },
       latestMessage: '运行驱动 uv，当前环境 CPU',
     }),
@@ -109,12 +116,16 @@ describe('AppShell', () => {
     const user = userEvent.setup();
     render(<App />);
 
+    // Wait for inspection to load — folder cards from managed paths appear
     await waitFor(() =>
-      expect(screen.getByText('CHECK STATUS 运行驱动 uv，当前环境 CPU')).toBeInTheDocument(),
+      expect(screen.getByRole('button', { name: '打开 根目录' })).toBeInTheDocument(),
     );
 
     await user.click(screen.getByRole('button', { name: '模型管理' }));
-    await user.click(screen.getByRole('button', { name: '下载 GenieData' }));
+
+    // First "下载" button corresponds to genie-tts (non-gpu card, always enabled)
+    const downloadBtns = screen.getAllByRole('button', { name: '下载' });
+    await user.click(downloadBtns[0]);
     expect(runtimeBridge.enqueueDownload).toHaveBeenCalledWith('genie-base');
 
     const mockedBridge = runtimeBridge as typeof runtimeBridge & {
@@ -138,7 +149,7 @@ describe('AppShell', () => {
     await waitFor(() => expect(screen.getByText('正在下载')).toBeInTheDocument());
 
     await user.click(screen.getByRole('button', { name: '一键启动' }));
-    expect(screen.getByText('CHECK STATUS 运行驱动 uv，当前环境 CPU')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '打开 Genie 基础资源' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '打开 Genie 基础资源' }));
     expect(runtimeBridge.openManagedPath).toHaveBeenCalledWith('genieBase');
@@ -148,8 +159,7 @@ describe('AppShell', () => {
     expect(screen.getByText('当前任务 GenieData 基础资源')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '设置' }));
-    expect(screen.getByDisplayValue('uv')).toBeDisabled();
-    expect(screen.getByDisplayValue('/repo/.venv/bin/python')).toBeDisabled();
+    expect(screen.getByText('CPU 就绪')).toBeInTheDocument();
   });
 
   it('blocks runtime inspection and download actions until environment probe is ready', async () => {
@@ -168,18 +178,18 @@ describe('AppShell', () => {
 
     render(<App />);
 
+    // latestMessage shows in NoticePanel status bar
     await waitFor(() =>
-      expect(
-        screen.getByText('CHECK STATUS torch 不可用'),
-      ).toBeInTheDocument(),
+      expect(screen.getByText('torch 不可用')).toBeInTheDocument(),
     );
 
     expect(runtimeBridge.inspectRuntime).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole('button', { name: '模型管理' }));
-    expect(
-      screen.getByRole('button', { name: '下载 GenieData' }),
-    ).toBeDisabled();
+    const downloadBtns = screen.getAllByRole('button', { name: '下载' });
+    for (const btn of downloadBtns) {
+      expect(btn).toBeDisabled();
+    }
   });
 
   it('toggles theme from the lightbulb action and persists the selection', async () => {

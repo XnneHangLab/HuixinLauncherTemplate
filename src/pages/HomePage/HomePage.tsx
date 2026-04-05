@@ -7,6 +7,7 @@ import type {
   RuntimeInspection,
   RuntimeTaskRecord,
 } from '../../services/runtime/runtime';
+import { getQueueSummary } from '../../services/runtime/runtime';
 import '../../styles/home.css';
 
 interface HomePageProps {
@@ -28,7 +29,8 @@ export function HomePage({
   onOpenModels,
   runtimeMode,
 }: HomePageProps) {
-  const runtimeStatus = runtimeMode.toUpperCase();
+  const queueSummary = getQueueSummary(tasks);
+  const genieStatus = inspection?.resources['genie-base']?.status ?? '未检查';
 
   return (
     <div className="home-page">
@@ -43,13 +45,15 @@ export function HomePage({
             {versionMeta.map((line) => (
               <div key={line}>{line}</div>
             ))}
-            <div>状态 {runtimeStatus}</div>
-            <div>CHECK STATUS {latestMessage}</div>
           </div>
         </div>
 
         <NoticePanel
           notices={notices}
+          runtimeMode={runtimeMode}
+          genieStatus={genieStatus}
+          queueLength={queueSummary.queueLength}
+          latestMessage={latestMessage}
           onOpenModels={onOpenModels}
         />
       </div>

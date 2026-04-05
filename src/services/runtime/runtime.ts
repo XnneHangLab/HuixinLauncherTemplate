@@ -185,7 +185,9 @@ export function isEnvironmentReady(probe: EnvironmentProbe | null) {
 }
 
 function buildRuntimeTaskLabel(target: string) {
-  return target === 'genie-base' ? 'GenieData 基础资源' : target;
+  if (target === 'genie-base') return 'GenieData 基础资源';
+  if (target === 'gsv-lite') return 'GSV-Lite 数据包';
+  return target;
 }
 
 function normalizeRuntimeTaskStatus(status: string): DownloadTaskStatus {
