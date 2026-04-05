@@ -525,7 +525,9 @@ where
         .arg("python")
         .current_dir(repo_root)
         .env("XH_VOICE_WORKSPACE_ROOT", workspace_root)
-        .env("XH_RUNTIME_CONFIG", repo_root.join("config").join("runtime.toml"));
+        .env("XH_RUNTIME_CONFIG", repo_root.join("config").join("runtime.toml"))
+        .env("PYTHONUTF8", "1")
+        .env("PYTHONIOENCODING", "utf-8");
     for arg in python_args {
         command.arg(arg.as_ref());
     }
