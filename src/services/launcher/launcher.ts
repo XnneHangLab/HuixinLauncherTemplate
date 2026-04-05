@@ -1,4 +1,3 @@
-export type LaunchState = 'idle' | 'running';
 export type ConsoleLogKind = 'system' | 'stdout' | 'stderr';
 
 export interface ConsoleLogEntry {
@@ -9,15 +8,6 @@ export interface ConsoleLogEntry {
 }
 
 export const UNCONFIGURED_COMMAND_LABEL = '未配置命令';
-
-export const launchButtonLabels: Record<LaunchState, string> = {
-  idle: '▶ 一键启动',
-  running: '✈ 运行中',
-};
-
-export function toggleLaunchState(currentState: LaunchState): LaunchState {
-  return currentState === 'idle' ? 'running' : 'idle';
-}
 
 export function getVisibleCommand(command: string | null): string {
   const value = command?.trim();
@@ -38,22 +28,6 @@ export function createConsoleLog(
     time: createTimestamp(),
     kind,
     text,
-  };
-}
-
-export function buildLaunchToggleResult(
-  currentState: LaunchState,
-  configuredCommand: string | null,
-) {
-  const nextState = toggleLaunchState(currentState);
-  const logText =
-    nextState === 'running'
-      ? `运行: ${getVisibleCommand(configuredCommand)}`
-      : '已停止';
-
-  return {
-    nextState,
-    log: createConsoleLog('system', logText),
   };
 }
 
