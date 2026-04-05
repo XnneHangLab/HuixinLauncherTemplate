@@ -153,8 +153,18 @@ pub fn drain_download_queue(app: AppHandle, state: RuntimeState) {
             task.task_id.clone(),
             task.target.clone(),
         ) {
+            let timestamp = super::state::current_timestamp();
             let mut queue = state.queue.lock().unwrap();
-            queue.apply_update(&task.task_id, TaskStatus::Failed, error, 3, 3);
+            queue.apply_update(&task.task_id, TaskStatus::Failed, error.clone(), 3, 3);
+            drop(queue);
+
+            let event = build_terminal_failure_event(
+                &task.task_id,
+                &task.target,
+                &error,
+                &timestamp,
+            );
+            let _ = app.emit("runtime:event", &event);
         }
     }
 }
@@ -230,6 +240,25 @@ fn managed_path_from_payload(
     ))
 }
 
+fn build_terminal_failure_event(
+    task_id: &str,
+    target: &str,
+    message: &str,
+    timestamp: &str,
+) -> RuntimeEventPayload {
+    RuntimeEventPayload {
+        event: "download.failed".to_string(),
+        task_id: task_id.to_string(),
+        target: target.to_string(),
+        status: "failed".to_string(),
+        message: message.to_string(),
+        progress_current: 3,
+        progress_total: 3,
+        progress_unit: "stage".to_string(),
+        timestamp: timestamp.to_string(),
+    }
+}
+
 fn task_status_from_str(value: &str) -> TaskStatus {
     match value {
         "queued" => TaskStatus::Queued,
@@ -247,7 +276,7 @@ fn task_status_from_str(value: &str) -> TaskStatus {
 mod tests {
     use serde_json::json;
 
-    use super::managed_path_from_payload;
+    use super::{build_terminal_failure_event, managed_path_from_payload};
 
     #[test]
     fn managed_path_from_payload_returns_matched_path() {
@@ -272,5 +301,25 @@ mod tests {
 
         let error = managed_path_from_payload(&payload, "downloadLogs").unwrap_err();
         assert!(error.contains("downloadLogs"));
+    }
+
+    #[test]
+    fn build_terminal_failure_event_marks_task_as_failed() {
+        let event = build_terminal_failure_event(
+            "task-7",
+            "genie-base",
+            "spawn failed",
+            "1712300000",
+        );
+
+        assert_eq!(event.event, "download.failed");
+        assert_eq!(event.task_id, "task-7");
+        assert_eq!(event.target, "genie-base");
+        assert_eq!(event.status, "failed");
+        assert_eq!(event.message, "spawn failed");
+        assert_eq!(event.progress_current, 3);
+        assert_eq!(event.progress_total, 3);
+        assert_eq!(event.progress_unit, "stage");
+        assert_eq!(event.timestamp, "1712300000");
     }
 }
