@@ -41,7 +41,7 @@ describe('HomePage', () => {
       screen.getByText('启动器版本：绘心启动器 0.1.0'),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('当前阶段优先接入 GenieData 下载、环境识别和日志链路。'),
+      screen.getByText('绘心是 XnneHangLab 正在持续迭代的启动器产品，也会沉淀为可复用模板，后续会逐步扩展到语音、模型管理与控制台能力。'),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: '前往模型管理' }),

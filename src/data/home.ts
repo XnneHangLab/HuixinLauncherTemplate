@@ -35,9 +35,9 @@ export const versionMeta = [
 ];
 
 export const notices = [
-  '当前阶段优先接入 GenieData 下载、环境识别和日志链路。',
-  'CPU 环境仅开放 Genie-TTS 基础资源链路，GPU 环境在后续阶段再扩更多后端。',
-  '模型下载进入串行队列后，可在模型管理页查看详情，在控制台页查看详细日志。',
+  '绘心是 XnneHangLab 正在持续迭代的启动器产品，也会沉淀为可复用模板，后续会逐步扩展到语音、模型管理与控制台能力。',
+  '当前仓库以模板能力验证为主，界面、交互和命令执行链路会持续更新，欢迎基于此继续定制自己的启动器。',
+  '问题反馈与功能建议请通过仓库 Issue 或 PR 提交，文档与实现会随版本持续同步。',
 ];
 
 export const placeholderFolders: PlaceholderFolderItem[] = [
