@@ -1,4 +1,4 @@
-import huixinLogo from '../../../assets/brand/huixin-logo.svg';
+import huixinLogo from '../../../assets/brand/logo-square.jpg';
 import { NavItem } from '../NavItem/NavItem';
 import type { NavItemData, PageId } from '../../../data/nav';
 import type { ThemeMode } from '../../../services/theme/theme';
