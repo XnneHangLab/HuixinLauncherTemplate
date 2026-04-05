@@ -6,8 +6,9 @@ use super::process::{
 use super::state::{resolve_workspace_root, RuntimeState};
 
 #[tauri::command]
-pub fn inspect_runtime(state: State<'_, RuntimeState>) -> Result<serde_json::Value, String> {
-    run_inspect_command(&state.workspace_root)
+pub async fn inspect_runtime(state: State<'_, RuntimeState>) -> Result<serde_json::Value, String> {
+    let workspace_root = state.workspace_root.clone();
+    run_blocking_runtime_action(move || run_inspect_command(&workspace_root)).await
 }
 
 #[tauri::command]
@@ -67,5 +68,30 @@ fn validate_download_target(target: &str) -> Result<(&'static str, &'static str)
     match target {
         "genie-base" => Ok(("genie-base", "GenieData 基础资源")),
         other => Err(format!("unsupported download target: {other}")),
+    }
+}
+
+async fn run_blocking_runtime_action<T, F>(action: F) -> Result<T, String>
+where
+    T: Send + 'static,
+    F: FnOnce() -> Result<T, String> + Send + 'static,
+{
+    tauri::async_runtime::spawn_blocking(action)
+        .await
+        .map_err(|error| format!("failed to join runtime task: {error}"))?
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn run_blocking_runtime_action_moves_work_off_the_calling_thread() {
+        let caller_thread = format!("{:?}", std::thread::current().id());
+        let worker_thread =
+            tauri::async_runtime::block_on(super::run_blocking_runtime_action(|| {
+                Ok(format!("{:?}", std::thread::current().id()))
+            }))
+            .unwrap();
+
+        assert_ne!(worker_thread, caller_thread);
     }
 }
