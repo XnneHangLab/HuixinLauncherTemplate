@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-  xnne_hang_lab_launcher_template_lib::run();
+    xnne_hang_lab_launcher_template_lib::run();
 }
