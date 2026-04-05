@@ -49,7 +49,9 @@ pub struct PythonEnvelope {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct EnvironmentProbePayload {
+    #[serde(default)]
     pub workspace_root: String,
+    #[serde(default)]
     pub repo_root: String,
     pub status: String,
     pub mode: Option<String>,

@@ -89,13 +89,13 @@ describe('HomePage', () => {
       screen.getByText('启动器版本：绘心启动器 0.1.0'),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('当前环境 CPU'),
+      screen.getByText('状态 CPU'),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('GenieData 状态 missing'),
+      screen.getByText('CHECK STATUS 运行驱动 uv，当前环境 CPU'),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('队列长度 1'),
+      screen.getByText('当前阶段优先接入 GenieData 下载、环境识别和日志链路。'),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: '前往模型管理' }),

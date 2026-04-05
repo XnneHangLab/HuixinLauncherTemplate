@@ -575,7 +575,10 @@ mod tests {
 
     use serde_json::json;
 
-    use super::{build_terminal_failure_event, build_uv_python_command, managed_path_from_payload};
+    use super::{
+        build_terminal_failure_event, build_uv_python_command, managed_path_from_payload,
+        EnvironmentProbePayload,
+    };
 
     #[test]
     fn build_uv_python_command_always_includes_no_sync() {
@@ -614,6 +617,26 @@ mod tests {
             key == "XH_VOICE_WORKSPACE_ROOT"
                 && value.as_deref() == Some("/tmp/workspace")
         }));
+    }
+
+    #[test]
+    fn environment_probe_payload_defaults_workspace_fields_when_python_probe_omits_them() {
+        let payload: EnvironmentProbePayload = serde_json::from_str(
+            r#"{
+                "status":"torch-cpu-ready",
+                "mode":"cpu",
+                "torchAvailable":true,
+                "torchVersion":"2.6.0+cpu",
+                "cudaAvailable":false,
+                "issues":[],
+                "message":"torch 已就绪: CPU"
+            }"#,
+        )
+        .unwrap();
+
+        assert_eq!(payload.workspace_root, "");
+        assert_eq!(payload.repo_root, "");
+        assert_eq!(payload.status, "torch-cpu-ready");
     }
 
     #[test]

@@ -110,7 +110,7 @@ describe('AppShell', () => {
     render(<App />);
 
     await waitFor(() =>
-      expect(screen.getByText('运行驱动 uv，当前环境 CPU')).toBeInTheDocument(),
+      expect(screen.getByText('CHECK STATUS 运行驱动 uv，当前环境 CPU')).toBeInTheDocument(),
     );
 
     await user.click(screen.getByRole('button', { name: '模型管理' }));
@@ -138,7 +138,7 @@ describe('AppShell', () => {
     await waitFor(() => expect(screen.getByText('正在下载')).toBeInTheDocument());
 
     await user.click(screen.getByRole('button', { name: '一键启动' }));
-    expect(screen.getByText('队列长度 1')).toBeInTheDocument();
+    expect(screen.getByText('CHECK STATUS 运行驱动 uv，当前环境 CPU')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '打开 Genie 基础资源' }));
     expect(runtimeBridge.openManagedPath).toHaveBeenCalledWith('genieBase');
@@ -170,7 +170,7 @@ describe('AppShell', () => {
 
     await waitFor(() =>
       expect(
-        screen.getByText('torch 不可用'),
+        screen.getByText('CHECK STATUS torch 不可用'),
       ).toBeInTheDocument(),
     );
 
