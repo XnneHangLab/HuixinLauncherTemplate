@@ -1,15 +1,17 @@
-import type { FolderItem } from '../../../data/home';
+import type { ManagedFolderItem } from '../../../services/runtime/runtime';
 
 interface FolderCardProps {
-  item: FolderItem;
+  item: ManagedFolderItem;
+  onOpen: (pathKey: string) => void;
 }
 
-export function FolderCard({ item }: FolderCardProps) {
+export function FolderCard({ item, onOpen }: FolderCardProps) {
   return (
     <button
       type="button"
       className="folder-card"
       aria-label={`打开 ${item.title}`}
+      onClick={() => onOpen(item.key)}
     >
       <span className="folder-left">
         <span className="folder-icon" aria-hidden="true">

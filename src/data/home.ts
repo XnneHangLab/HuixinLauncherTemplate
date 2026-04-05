@@ -6,7 +6,8 @@ export interface HeroConfettiPiece {
   width?: string;
 }
 
-export interface FolderItem {
+export interface PlaceholderFolderItem {
+  key: string;
   title: string;
   path: string;
   icon: string;
@@ -29,17 +30,6 @@ export const heroConfetti: HeroConfettiPiece[] = [
   { top: '178px', left: '76%', color: '#72a7ff', rotate: '-32deg', width: '18px' },
 ];
 
-export const folders: FolderItem[] = [
-  { title: '根目录', path: '.', icon: '📁' },
-  { title: '扩展文件夹', path: 'extensions', icon: '🧷' },
-  { title: '临时文件夹', path: 'tmp', icon: '🧹' },
-  { title: '超分输出', path: 'extras-images', icon: '⊞' },
-  { title: '文生图（网格）', path: 'txt2img-grids', icon: '🖹' },
-  { title: '文生图（单图）', path: 'txt2img-images', icon: '📄' },
-  { title: '图生图（网格）', path: 'img2img-grids', icon: '🖼' },
-  { title: '图生图（单图）', path: 'img2img-images', icon: '▣' },
-];
-
 export const versionMeta = [
   '启动器版本：绘心启动器 0.1.0',
 ];
@@ -48,4 +38,15 @@ export const notices = [
   '绘心是 XnneHangLab 正在持续迭代的启动器产品，也会沉淀为可复用模板，后续会逐步扩展到语音、模型管理与控制台能力。',
   '当前仓库以模板能力验证为主，界面、交互和命令执行链路会持续更新，欢迎基于此继续定制自己的启动器。',
   '问题反馈与功能建议请通过仓库 Issue 或 PR 提交，文档与实现会随版本持续同步。',
+];
+
+export const placeholderFolders: PlaceholderFolderItem[] = [
+  { key: 'workspace', title: '根目录', path: '.', icon: '📁' },
+  { key: 'extensions', title: '扩展文件夹', path: 'extensions', icon: '🧷' },
+  { key: 'tmp', title: '临时文件夹', path: 'tmp', icon: '🧹' },
+  { key: 'extras-images', title: '超分输出', path: 'extras-images', icon: '⊞' },
+  { key: 'txt2img-grids', title: '文生图（网格）', path: 'txt2img-grids', icon: '🖹' },
+  { key: 'txt2img-images', title: '文生图（单图）', path: 'txt2img-images', icon: '📄' },
+  { key: 'img2img-grids', title: '图生图（网格）', path: 'img2img-grids', icon: '🖼' },
+  { key: 'img2img-images', title: '图生图（单图）', path: 'img2img-images', icon: '▣' },
 ];

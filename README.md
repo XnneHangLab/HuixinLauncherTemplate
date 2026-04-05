@@ -59,6 +59,57 @@
 - 已接入窗口控制相关前端逻辑
 - 适合继续扩展为完整 Launcher
 
+## 第一阶段运行时链路（Phase 1）
+
+第一阶段由 Python CLI 提供运行时事实，Tauri 负责队列与事件桥接，React 负责展示。
+
+### 1. 运行时检查
+
+本地先执行：
+
+```bash
+uv run python -m xnnehanglab_tts.cli inspect-runtime
+```
+
+Launcher 启动后会通过 Tauri `inspect_runtime` 命令读取这份检查结果，核心字段包括：
+
+- `runtimeDriver`（当前阶段固定为 `uv`）
+- `pythonPath`（来自 `config/runtime.toml` 的 `python_path`）
+- `environment`（CPU/GPU、torch/cuda 可用性）
+- `resources.genie-base`（GenieData 资源状态）
+- `managedPaths`（可打开的受管目录）
+
+### 2. GenieData 下载与串行队列
+
+模型页点击“下载 GenieData”会触发 Tauri `enqueue_download`，任务进入串行队列：
+
+1. 先标记 `queued`
+2. 后台 worker 逐个执行下载
+3. 按阶段推送 `preparing/downloading/verifying/completed|failed`
+
+可通过 CLI 单独校验资源状态：
+
+```bash
+uv run python -m xnnehanglab_tts.cli verify genie-base
+```
+
+下载目标目录为：
+
+```text
+models/genie/base/GenieData
+```
+
+### 3. 控制台事件与日志导出
+
+Tauri 会把运行时输出拆成两条事件通道给前端：
+
+- `runtime:event`：结构化任务事件（状态、进度、消息）
+- `runtime:raw-log`：原始文本输出
+
+控制台页展示运行驱动、当前活动任务、队列长度和日志明细，并保留复制/清空/导出能力。
+
+“导出日志”通过 Tauri `export_console_logs` 写入下载日志目录，方便问题复现与排查。
+
 ## 为什么单独做这个仓库
 
 > [!IMPORTANT]

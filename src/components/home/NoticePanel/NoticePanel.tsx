@@ -1,18 +1,9 @@
-import type { LaunchState } from '../../../services/launcher/launcher';
-
 interface NoticePanelProps {
   notices: string[];
-  buttonLabel: string;
-  launchState: LaunchState;
-  onLaunch: () => void;
+  onOpenModels: () => void;
 }
 
-export function NoticePanel({
-  notices,
-  buttonLabel,
-  launchState,
-  onLaunch,
-}: NoticePanelProps) {
+export function NoticePanel({ notices, onOpenModels }: NoticePanelProps) {
   return (
     <aside className="notice">
       <h2>公告</h2>
@@ -24,10 +15,10 @@ export function NoticePanel({
       <button
         type="button"
         className="run-btn"
-        data-state={launchState}
-        onClick={onLaunch}
+        data-state="ready"
+        onClick={onOpenModels}
       >
-        {buttonLabel}
+        前往模型管理
       </button>
     </aside>
   );

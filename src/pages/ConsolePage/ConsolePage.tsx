@@ -1,13 +1,14 @@
-import type {
-  ConsoleLogEntry,
-  LaunchState,
-} from '../../services/launcher/launcher';
-import { getVisibleCommand } from '../../services/launcher/launcher';
+import type { ConsoleLogEntry } from '../../services/launcher/launcher';
+import {
+  getQueueSummary,
+  type RuntimeDriver,
+  type RuntimeTaskRecord,
+} from '../../services/runtime/runtime';
 import '../../styles/console.css';
 
 interface ConsolePageProps {
-  launchState: LaunchState;
-  configuredCommand: string | null;
+  runtimeDriver: RuntimeDriver;
+  tasks: RuntimeTaskRecord[];
   logs: ConsoleLogEntry[];
   autoScroll: boolean;
   wrapLines: boolean;
@@ -19,8 +20,8 @@ interface ConsolePageProps {
 }
 
 export function ConsolePage({
-  launchState,
-  configuredCommand,
+  runtimeDriver,
+  tasks,
   logs,
   autoScroll,
   wrapLines,
@@ -30,19 +31,23 @@ export function ConsolePage({
   onCopyLog,
   onExportLogs,
 }: ConsolePageProps) {
-  const visibleCommand = getVisibleCommand(configuredCommand);
+  const queueSummary = getQueueSummary(tasks);
+  const queueState = queueSummary.activeTask ? 'running' : 'idle';
+  const activeTaskLabel = queueSummary.activeTask
+    ? `当前任务 ${queueSummary.activeTask.label}`
+    : '当前没有活动任务';
   const lastLog = logs[logs.length - 1];
 
   return (
     <div className="console-page">
       <header className="console-toolbar">
         <div className="console-toolbar__status">
-          <span className={`console-status console-status--${launchState}`}>
-            {launchState === 'running' ? '运行中' : '空闲'}
+          <span className={`console-status console-status--${queueState}`}>
+            {queueSummary.activeTask ? queueSummary.activeTask.status : 'idle'}
           </span>
           <div className="console-toolbar__meta">
-            <span className="console-toolbar__label">当前命令</span>
-            <span className="console-command">{visibleCommand}</span>
+            <span className="console-toolbar__label">运行驱动 {runtimeDriver}</span>
+            <span className="console-command">{activeTaskLabel}</span>
           </div>
         </div>
 
@@ -73,8 +78,8 @@ export function ConsolePage({
       <section className={`console-log-panel${wrapLines ? ' is-wrap' : ''}`}>
         {logs.length === 0 ? (
           <div className="console-empty">
-            <h2>尚未启动任务</h2>
-            <p>点击首页一键启动后，这里会显示运行信息</p>
+            <h2>尚无运行日志</h2>
+            <p>开始检查环境或下载资源后，这里会显示结构化事件和原始输出</p>
           </div>
         ) : (
           <div className="console-log-list">
@@ -104,6 +109,7 @@ export function ConsolePage({
 
       <footer className="console-footer">
         <span>日志条数 {logs.length}</span>
+        <span>队列任务 {queueSummary.queueLength}</span>
         <span>最后更新时间 {lastLog ? lastLog.time : '暂无'}</span>
         <span>{autoScroll ? '自动滚动开启' : '自动滚动关闭'}</span>
       </footer>

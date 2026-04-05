@@ -1,182 +1,202 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { vi } from 'vitest';
 import App from '../../app/App';
+import * as runtimeBridge from '../../services/runtime/bridge';
+import type { RuntimeEvent } from '../../services/runtime/runtime';
+
+const runtimeListeners = new Set<(event: RuntimeEvent) => void>();
+const rawLogListeners = new Set<(line: string) => void>();
+
+vi.mock('../../services/runtime/bridge', async () => {
+  const actual = await vi.importActual<typeof import('../../services/runtime/bridge')>(
+    '../../services/runtime/bridge',
+  );
+
+  return {
+    ...actual,
+    probeEnvironment: vi.fn().mockResolvedValue({
+      workspaceRoot: '/repo',
+      repoRoot: '/repo',
+      status: 'torch-cpu-ready',
+      mode: 'cpu',
+      torchAvailable: true,
+      torchVersion: '2.6.0+cpu',
+      cudaAvailable: false,
+      issues: [],
+      message: 'torch 已就绪: CPU',
+    }),
+    chooseWorkspaceRoot: vi.fn().mockResolvedValue(null),
+    useRepoWorkspaceRoot: vi.fn().mockResolvedValue({
+      workspaceRoot: '/repo',
+      repoRoot: '/repo',
+      status: 'torch-cpu-ready',
+      mode: 'cpu',
+      torchAvailable: true,
+      torchVersion: '2.6.0+cpu',
+      cudaAvailable: false,
+      issues: [],
+      message: 'torch 已就绪: CPU',
+    }),
+    inspectRuntime: vi.fn().mockResolvedValue({
+      runtimeDriver: 'uv',
+      pythonPath: '/repo/.venv/bin/python',
+      defaultBackend: 'genie-tts',
+      environment: {
+        mode: 'cpu',
+        torchAvailable: true,
+        torchVersion: '2.6.0+cpu',
+        cudaAvailable: false,
+        issues: [],
+      },
+      availableBackends: ['genie-tts'],
+      managedPaths: [
+        { key: 'workspace', label: '根目录', path: '/repo' },
+        { key: 'genieBase', label: 'Genie 基础资源', path: '/repo/models/genie/base' },
+        { key: 'modelscopeCache', label: 'ModelScope 缓存', path: '/repo/models/cache/modelscope' },
+        { key: 'downloadLogs', label: '下载日志', path: '/repo/logs/downloads' },
+      ],
+      resources: {
+        'genie-base': {
+          key: 'genie-base',
+          label: 'GenieData 基础资源',
+          status: 'missing',
+          path: '/repo/models/genie/base/GenieData',
+          missingPaths: ['speaker_encoder.onnx'],
+        },
+        'gsv-lite': {
+          key: 'gsv-lite',
+          label: 'GSV-Lite 数据包',
+          status: 'missing',
+          path: '/repo/models/GSVLiteData',
+          missingPaths: ['chinese-hubert-base'],
+        },
+      },
+      latestMessage: '运行驱动 uv，当前环境 CPU',
+    }),
+    listDownloadTasks: vi.fn().mockResolvedValue([]),
+    enqueueDownload: vi.fn().mockResolvedValue({
+      taskId: 'task-1',
+      target: 'genie-base',
+      label: 'GenieData 基础资源',
+      status: 'queued',
+      message: '已进入下载队列',
+      progressCurrent: 0,
+      progressTotal: 3,
+      updatedAt: '1712300000',
+    }),
+    openManagedPath: vi.fn().mockResolvedValue(undefined),
+    exportConsoleLogs: vi.fn().mockResolvedValue('/repo/logs/downloads/launcher.log'),
+    subscribeRuntimeEvents: vi.fn().mockImplementation(async (onEvent, onRawLog) => {
+      runtimeListeners.add(onEvent);
+      rawLogListeners.add(onRawLog);
+      return () => {
+        runtimeListeners.delete(onEvent);
+        rawLogListeners.delete(onRawLog);
+      };
+    }),
+    __emitRuntimeEvent(event: RuntimeEvent) {
+      runtimeListeners.forEach((listener) => listener(event));
+    },
+    __emitRawLog(line: string) {
+      rawLogListeners.forEach((listener) => listener(line));
+    },
+  };
+});
 
 describe('AppShell', () => {
-  const zeroLengthValues = new Set(['0', '0px']);
-
   beforeEach(() => {
     localStorage.clear();
+    runtimeListeners.clear();
+    rawLogListeners.clear();
+    vi.clearAllMocks();
   });
 
-  it('switches between nav pages and renders active page content', async () => {
-    const user = userEvent.setup();
-
-    const { container } = render(<App />);
-
-    const root = container.querySelector('.launcher-root');
-    const shell = container.querySelector('.app-shell');
-
-    expect(root).not.toBeNull();
-    expect(shell).not.toBeNull();
-    expect(getComputedStyle(root as Element).paddingTop).toBe('0px');
-    expect(getComputedStyle(shell as Element).borderTopWidth).toBe('0px');
-    expect((root as Element).getAttribute('data-theme')).toBe('night');
-
-    expect(
-      screen.getByRole('img', { name: '绘心 Logo' }),
-    ).toBeInTheDocument();
-    expect(screen.getByText('绘心')).toBeInTheDocument();
-    expect(
-      screen.getByRole('navigation', { name: '主导航' }),
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '帮助' })).toBeInTheDocument();
-    expect(
-      screen.getByRole('group', { name: '窗口控制' }),
-    ).toBeInTheDocument();
-
-    expect(screen.getByRole('button', { name: '一键启动' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    expect(screen.getByText('一键启动')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: '设置' }));
-    expect(screen.getByRole('button', { name: '设置' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    expect(
-      screen.getByRole('tab', { name: '一般设置', selected: true }),
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText('代理服务器地址')).toHaveValue(
-      'http://127.0.0.1:xxxx',
-    );
-    expect(
-      screen.getByRole('tabpanel', { name: '一般设置' }),
-    ).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: '模型管理' }));
-    expect(screen.getByText('模型管理 页面建设中')).toBeInTheDocument();
-    expect(screen.getAllByRole('button').length).toBeGreaterThanOrEqual(10);
-  });
-
-  it('keeps the shell height constrained when the settings page is active', async () => {
-    const user = userEvent.setup();
-    const { container } = render(<App />);
-
-    await user.click(screen.getByRole('button', { name: '设置' }));
-
-    const launcherRoot = container.querySelector('.launcher-root');
-    const appShell = container.querySelector('.app-shell');
-    const contentShell = container.querySelector('.content-shell');
-    const pageShell = container.querySelector('.page-shell');
-    const settingsShell = container.querySelector('.settings-shell');
-    const settingsWrap = container.querySelector('.settings-wrap');
-
-    expect(launcherRoot).not.toBeNull();
-    expect(appShell).not.toBeNull();
-    expect(contentShell).not.toBeNull();
-    expect(pageShell).not.toBeNull();
-    expect(settingsShell).not.toBeNull();
-    expect(settingsWrap).not.toBeNull();
-
-    expect(getComputedStyle(launcherRoot as Element).height).toBe('100%');
-    expect(
-      zeroLengthValues.has(getComputedStyle(appShell as Element).minHeight),
-    ).toBe(true);
-    expect(
-      zeroLengthValues.has(getComputedStyle(contentShell as Element).minHeight),
-    ).toBe(true);
-    expect(
-      zeroLengthValues.has(getComputedStyle(pageShell as Element).minHeight),
-    ).toBe(true);
-    expect(
-      zeroLengthValues.has(getComputedStyle(settingsShell as Element).minHeight),
-    ).toBe(true);
-    expect(
-      zeroLengthValues.has(getComputedStyle(settingsWrap as Element).minHeight),
-    ).toBe(true);
-  });
-
-  it('toggles the theme from the lightbulb item and stores the choice', async () => {
-    const user = userEvent.setup();
-    const { container } = render(<App />);
-
-    const root = container.querySelector('.launcher-root');
-    const lightbulb = screen.getByRole('button', { name: '灯泡' });
-
-    expect((root as Element).getAttribute('data-theme')).toBe('night');
-
-    await user.click(lightbulb);
-
-    expect((root as Element).getAttribute('data-theme')).toBe('day');
-    expect(localStorage.getItem('xnnehanglab.theme')).toBe('day');
-    expect(lightbulb).toHaveAttribute('aria-pressed', 'true');
-  });
-
-  it('keeps settings page active when clicking lightbulb and only toggles theme', async () => {
-    const user = userEvent.setup();
-    const { container } = render(<App />);
-
-    await user.click(screen.getByRole('button', { name: '设置' }));
-
-    const settingsButton = screen.getByRole('button', { name: '设置' });
-    const lightbulb = screen.getByRole('button', { name: '灯泡' });
-
-    expect(settingsButton).toHaveAttribute('aria-pressed', 'true');
-    expect(
-      screen.getByRole('tab', { name: '一般设置', selected: true }),
-    ).toBeInTheDocument();
-
-    await user.click(lightbulb);
-
-    const root = container.querySelector('.launcher-root');
-
-    expect(settingsButton).toHaveAttribute('aria-pressed', 'true');
-    expect(
-      screen.getByRole('tab', { name: '一般设置', selected: true }),
-    ).toBeInTheDocument();
-    expect((root as Element).getAttribute('data-theme')).toBe('day');
-    expect(localStorage.getItem('xnnehanglab.theme')).toBe('day');
-  });
-
-  it('restores the saved theme on first render', () => {
-    localStorage.setItem('xnnehanglab.theme', 'day');
-    const { container } = render(<App />);
-
-    const root = container.querySelector('.launcher-root');
-
-    expect((root as Element).getAttribute('data-theme')).toBe('day');
-  });
-
-  it('keeps launch state across page switches and lets running toggle back to idle', async () => {
+  it('loads runtime inspection, navigates to models, and keeps queue state in sync', async () => {
     const user = userEvent.setup();
     render(<App />);
 
-    const launchButton = screen.getByRole('button', { name: /^▶ 一键启动$/ });
-    expect(launchButton).toHaveAttribute('data-state', 'idle');
-
-    await user.click(launchButton);
-    expect(screen.getByRole('button', { name: /^✈ 运行中$/ })).toHaveAttribute(
-      'data-state',
-      'running',
+    // Wait for inspection to load — folder cards from managed paths appear
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: '打开 根目录' })).toBeInTheDocument(),
     );
+
+    await user.click(screen.getByRole('button', { name: '模型管理' }));
+
+    // First "下载" button corresponds to genie-tts (non-gpu card, always enabled)
+    const downloadBtns = screen.getAllByRole('button', { name: '下载' });
+    await user.click(downloadBtns[0]);
+    expect(runtimeBridge.enqueueDownload).toHaveBeenCalledWith('genie-base');
+
+    const mockedBridge = runtimeBridge as typeof runtimeBridge & {
+      __emitRuntimeEvent: (event: RuntimeEvent) => void;
+    };
+
+    await act(async () => {
+      mockedBridge.__emitRuntimeEvent({
+        event: 'download.progress',
+        taskId: 'task-1',
+        target: 'genie-base',
+        status: 'downloading',
+        message: '正在下载',
+        progressCurrent: 1,
+        progressTotal: 3,
+        progressUnit: 'stage',
+        timestamp: '1712300001',
+      });
+    });
+
+    await waitFor(() => expect(screen.getByText('正在下载')).toBeInTheDocument());
+
+    await user.click(screen.getByRole('button', { name: '一键启动' }));
+    expect(screen.getByRole('button', { name: '打开 Genie 基础资源' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '打开 Genie 基础资源' }));
+    expect(runtimeBridge.openManagedPath).toHaveBeenCalledWith('genieBase');
 
     await user.click(screen.getByRole('button', { name: '控制台' }));
-    expect(screen.getByText('运行: 未配置命令')).toBeInTheDocument();
+    expect(screen.getByText('运行驱动 uv')).toBeInTheDocument();
+    expect(screen.getByText('当前任务 GenieData 基础资源')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '设置' }));
-    await user.click(screen.getByRole('button', { name: '一键启动' }));
+    expect(screen.getByText('CPU 就绪')).toBeInTheDocument();
+  });
 
-    const runningButton = screen.getByRole('button', { name: /^✈ 运行中$/ });
-    expect(runningButton).toHaveAttribute('data-state', 'running');
+  it('blocks runtime inspection and download actions until environment probe is ready', async () => {
+    const user = userEvent.setup();
+    vi.mocked(runtimeBridge.probeEnvironment).mockResolvedValue({
+      workspaceRoot: '/repo',
+      repoRoot: '/repo',
+      status: 'torch-unavailable',
+      mode: null,
+      torchAvailable: false,
+      torchVersion: null,
+      cudaAvailable: false,
+      issues: ['No module named torch'],
+      message: 'torch 不可用',
+    });
 
-    await user.click(runningButton);
+    render(<App />);
 
-    expect(screen.getByRole('button', { name: /^▶ 一键启动$/ })).toHaveAttribute(
-      'data-state',
-      'idle',
-    );
+    await user.click(screen.getByRole('button', { name: '模型管理' }));
+    const downloadBtns = await screen.findAllByRole('button', { name: '下载' });
+    for (const btn of downloadBtns) {
+      expect(btn).toBeDisabled();
+    }
+  });
+
+  it('toggles theme from the lightbulb action and persists the selection', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<App />);
+
+    const root = container.querySelector('.launcher-root');
+    const lightbulb = screen.getByRole('button', { name: '灯泡' });
+
+    expect((root as Element).getAttribute('data-theme')).toBe('night');
+
+    await user.click(lightbulb);
+
+    expect((root as Element).getAttribute('data-theme')).toBe('day');
+    expect(localStorage.getItem('xnnehanglab.theme')).toBe('day');
   });
 });

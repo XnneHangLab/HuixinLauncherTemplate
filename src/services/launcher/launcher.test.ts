@@ -1,51 +1,37 @@
 import {
-  buildLaunchToggleResult,
+  createConsoleLog,
   formatConsoleExport,
   getVisibleCommand,
-  launchButtonLabels,
-  toggleLaunchState,
 } from './launcher';
 
 describe('launcher helpers', () => {
-  it('toggles launch state between idle and running', () => {
-    expect(toggleLaunchState('idle')).toBe('running');
-    expect(toggleLaunchState('running')).toBe('idle');
-  });
-
   it('falls back to 未配置命令 when no command is configured', () => {
     expect(getVisibleCommand(null)).toBe('未配置命令');
     expect(getVisibleCommand('')).toBe('未配置命令');
-    expect(getVisibleCommand('uv run app.py')).toBe('uv run app.py');
+    expect(
+      getVisibleCommand('uv run python -m xnnehanglab_tts.cli inspect-runtime'),
+    ).toBe('uv run python -m xnnehanglab_tts.cli inspect-runtime');
   });
 
-  it('creates launch transition logs for start and stop', () => {
-    const startResult = buildLaunchToggleResult('idle', null);
-    const stopResult = buildLaunchToggleResult('running', null);
+  it('creates timestamped console logs', () => {
+    const log = createConsoleLog('system', '已进入下载队列');
 
-    expect(startResult.nextState).toBe('running');
-    expect(startResult.log.kind).toBe('system');
-    expect(startResult.log.text).toBe('运行: 未配置命令');
-
-    expect(stopResult.nextState).toBe('idle');
-    expect(stopResult.log.text).toBe('已停止');
+    expect(log.kind).toBe('system');
+    expect(log.text).toBe('已进入下载队列');
+    expect(log.time.length).toBeGreaterThan(0);
   });
 
   it('formats logs for export', () => {
     const output = formatConsoleExport([
       {
         id: 'log-1',
-        time: '2026-04-04 15:00:00',
+        time: '2026-04-05 15:00:00',
         kind: 'system',
-        text: '运行: 未配置命令',
+        text: '已进入下载队列',
       },
     ]);
 
     expect(output).toContain('[system]');
-    expect(output).toContain('运行: 未配置命令');
-  });
-
-  it('keeps launch button labels stable', () => {
-    expect(launchButtonLabels.idle).toBe('▶ 一键启动');
-    expect(launchButtonLabels.running).toBe('✈ 运行中');
+    expect(output).toContain('已进入下载队列');
   });
 });

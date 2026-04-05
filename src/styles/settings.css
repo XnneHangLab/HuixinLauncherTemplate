@@ -147,6 +147,126 @@
   font-size: 14px;
 }
 
+.settings-shell .workspace-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.settings-shell .workspace-input {
+  width: 320px;
+}
+
+.settings-shell .workspace-button {
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 9px;
+  border: 1px solid var(--input-border);
+  background: var(--card-bg-start);
+  color: var(--text);
+  font-size: 14px;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    opacity 0.16s ease;
+}
+
+.settings-shell .workspace-button:hover:not(:disabled) {
+  background: var(--panel-3);
+  border-color: rgba(121, 161, 221, 0.8);
+}
+
+.settings-shell .workspace-button:active:not(:disabled) {
+  background: var(--panel-2);
+}
+
+.settings-shell .workspace-button--secondary {
+  font-size: 13px;
+  color: var(--muted);
+  border-color: var(--line);
+  background: transparent;
+}
+
+.settings-shell .workspace-button--secondary:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--panel-2);
+  border-color: var(--input-border);
+}
+
+.settings-shell .workspace-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.settings-shell .env-info-card {
+  margin-bottom: 14px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.settings-shell .env-info-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--line);
+}
+
+.settings-shell .env-info-row:first-child {
+  border-top: 0;
+}
+
+.settings-shell .env-info-label {
+  min-width: 80px;
+  font-size: 13px;
+  color: var(--muted);
+  flex: none;
+}
+
+.settings-shell .env-info-value {
+  font-size: 14px;
+  color: var(--text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-shell .env-info-mono {
+  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+  font-size: 13px;
+}
+
+.settings-shell .env-info-path {
+  opacity: 0.7;
+}
+
+.settings-shell .env-info-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--line);
+  background: var(--panel-3);
+  color: var(--muted);
+}
+
+.settings-shell .env-info-badge--ready {
+  color: #7ec87a;
+  border-color: rgba(100, 180, 90, 0.28);
+  background: rgba(100, 180, 90, 0.07);
+}
+
+.settings-shell .env-info-badge--warn {
+  color: #f4b86a;
+  border-color: rgba(240, 160, 60, 0.28);
+  background: rgba(240, 160, 60, 0.07);
+}
+
 .settings-shell .switch {
   position: relative;
   width: 42px;
@@ -203,5 +323,14 @@
 @media (max-width: 900px) {
   .settings-shell .proxy-input {
     width: 170px;
+  }
+
+  .settings-shell .workspace-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .settings-shell .workspace-input {
+    width: 220px;
   }
 }
