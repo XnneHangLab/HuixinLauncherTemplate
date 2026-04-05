@@ -15,6 +15,29 @@ vi.mock('../../services/runtime/bridge', async () => {
 
   return {
     ...actual,
+    probeEnvironment: vi.fn().mockResolvedValue({
+      workspaceRoot: '/repo',
+      repoRoot: '/repo',
+      status: 'torch-cpu-ready',
+      mode: 'cpu',
+      torchAvailable: true,
+      torchVersion: '2.6.0+cpu',
+      cudaAvailable: false,
+      issues: [],
+      message: 'torch 已就绪: CPU',
+    }),
+    chooseWorkspaceRoot: vi.fn().mockResolvedValue(null),
+    useRepoWorkspaceRoot: vi.fn().mockResolvedValue({
+      workspaceRoot: '/repo',
+      repoRoot: '/repo',
+      status: 'torch-cpu-ready',
+      mode: 'cpu',
+      torchAvailable: true,
+      torchVersion: '2.6.0+cpu',
+      cudaAvailable: false,
+      issues: [],
+      message: 'torch 已就绪: CPU',
+    }),
     inspectRuntime: vi.fn().mockResolvedValue({
       runtimeDriver: 'uv',
       pythonPath: '/repo/.venv/bin/python',
@@ -127,6 +150,36 @@ describe('AppShell', () => {
     await user.click(screen.getByRole('button', { name: '设置' }));
     expect(screen.getByDisplayValue('uv')).toBeDisabled();
     expect(screen.getByDisplayValue('/repo/.venv/bin/python')).toBeDisabled();
+  });
+
+  it('blocks runtime inspection and download actions until environment probe is ready', async () => {
+    const user = userEvent.setup();
+    vi.mocked(runtimeBridge.probeEnvironment).mockResolvedValue({
+      workspaceRoot: '/repo',
+      repoRoot: '/repo',
+      status: 'torch-unavailable',
+      mode: null,
+      torchAvailable: false,
+      torchVersion: null,
+      cudaAvailable: false,
+      issues: ['No module named torch'],
+      message: 'torch 不可用',
+    });
+
+    render(<App />);
+
+    await waitFor(() =>
+      expect(
+        screen.getByText('torch 不可用'),
+      ).toBeInTheDocument(),
+    );
+
+    expect(runtimeBridge.inspectRuntime).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: '模型管理' }));
+    expect(
+      screen.getByRole('button', { name: '下载 GenieData' }),
+    ).toBeDisabled();
   });
 
   it('toggles theme from the lightbulb action and persists the selection', async () => {

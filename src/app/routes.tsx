@@ -7,6 +7,7 @@ import { SettingsPage } from '../pages/SettingsPage/SettingsPage';
 import type { PageId } from '../data/nav';
 import type { ConsoleLogEntry } from '../services/launcher/launcher';
 import type {
+  EnvironmentProbe,
   ManagedFolderItem,
   RuntimeInspection,
   RuntimeDriver,
@@ -20,10 +21,18 @@ interface RenderPageOptions {
   logs: ConsoleLogEntry[];
   autoScroll: boolean;
   wrapLines: boolean;
+  latestMessage: string;
   onOpenModels: () => void;
   onDownloadGenieBase: () => void;
   onOpenPath: (pathKey: string) => void;
   runtimeDriver: RuntimeDriver;
+  runtimeMode: string;
+  scriptsReady: boolean;
+  workspaceLocked: boolean;
+  workspaceRoot: string;
+  environmentProbe: EnvironmentProbe | null;
+  onChooseWorkspaceRoot: () => void;
+  onUseRepoWorkspaceRoot: () => void;
   pythonPath: string;
   onSetAutoScroll: (next: boolean) => void;
   onSetWrapLines: (next: boolean) => void;
@@ -43,14 +52,21 @@ export function renderPage(
           inspection={options.inspection}
           tasks={options.tasks}
           folders={options.folders}
+          latestMessage={options.latestMessage}
           onOpenPath={options.onOpenPath}
           onOpenModels={options.onOpenModels}
+          runtimeMode={options.runtimeMode}
         />
       );
     case 'settings':
       return (
         <SettingsPage
           runtimeDriver={options.runtimeDriver}
+          workspaceRoot={options.workspaceRoot}
+          workspaceLocked={options.workspaceLocked}
+          environmentProbe={options.environmentProbe}
+          onChooseWorkspaceRoot={options.onChooseWorkspaceRoot}
+          onUseRepoWorkspaceRoot={options.onUseRepoWorkspaceRoot}
           pythonPath={options.pythonPath}
         />
       );
@@ -82,6 +98,7 @@ export function renderPage(
           tasks={options.tasks}
           onDownloadGenieBase={options.onDownloadGenieBase}
           onOpenPath={options.onOpenPath}
+          scriptsReady={options.scriptsReady}
         />
       );
     case 'tools':

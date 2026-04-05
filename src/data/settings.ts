@@ -88,6 +88,8 @@ export const aboutInfo = [
 ];
 
 export const runtimeSettings = {
+  workspaceRootLabel: '工作目录',
+  environmentStatusLabel: '环境状态',
   driverLabel: '运行驱动',
   pythonPathLabel: 'Python 路径',
   pythonPathPlaceholder: '阶段一未启用，后续按 driver 扩展',

@@ -12,16 +12,29 @@ import {
   settingsTabs,
   type SettingsTabId,
 } from '../../data/settings';
-import type { RuntimeDriver } from '../../services/runtime/runtime';
+import type {
+  EnvironmentProbe,
+  RuntimeDriver,
+} from '../../services/runtime/runtime';
 import '../../styles/settings.css';
 
 interface SettingsPageProps {
   runtimeDriver: RuntimeDriver;
+  workspaceRoot: string;
+  workspaceLocked: boolean;
+  environmentProbe: EnvironmentProbe | null;
+  onChooseWorkspaceRoot: () => void;
+  onUseRepoWorkspaceRoot: () => void;
   pythonPath: string;
 }
 
 export function SettingsPage({
   runtimeDriver,
+  workspaceRoot,
+  workspaceLocked,
+  environmentProbe,
+  onChooseWorkspaceRoot,
+  onUseRepoWorkspaceRoot,
   pythonPath,
 }: SettingsPageProps) {
   const [activeTab, setActiveTab] = useState<SettingsTabId>('general');
@@ -42,6 +55,9 @@ export function SettingsPage({
       preferenceSettings.map((item) => [item.id, item.defaultValue]),
     ) as Record<string, boolean>,
   );
+  const environmentLabel = environmentProbe
+    ? formatEnvironmentStatus(environmentProbe.status)
+    : '正在检测';
 
   return (
     <div className="settings-shell">
@@ -61,6 +77,56 @@ export function SettingsPage({
             <div className="group-title group-title--standalone">运行设置</div>
 
             <SettingCard>
+              <SettingRow
+                name={runtimeSettings.workspaceRootLabel}
+                description={
+                  workspaceLocked
+                    ? '当前有任务运行，禁止切换工作目录'
+                    : '切换后会立刻重新探测 uv / Python / torch 环境'
+                }
+                icon="📂"
+              >
+                <div className="workspace-actions">
+                  <input
+                    className="proxy-input workspace-input"
+                    aria-label={runtimeSettings.workspaceRootLabel}
+                    value={workspaceRoot}
+                    disabled
+                    readOnly
+                  />
+                  <button
+                    type="button"
+                    className="workspace-button"
+                    onClick={onUseRepoWorkspaceRoot}
+                    disabled={workspaceLocked}
+                  >
+                    使用当前项目目录
+                  </button>
+                  <button
+                    type="button"
+                    className="workspace-button"
+                    onClick={onChooseWorkspaceRoot}
+                    disabled={workspaceLocked}
+                  >
+                    选择工作目录
+                  </button>
+                </div>
+              </SettingRow>
+
+              <SettingRow
+                name={runtimeSettings.environmentStatusLabel}
+                description={environmentProbe?.message ?? '正在检测 uv / Python / torch'}
+                icon="◎"
+              >
+                <input
+                  className="proxy-input"
+                  aria-label={runtimeSettings.environmentStatusLabel}
+                  value={environmentLabel}
+                  disabled
+                  readOnly
+                />
+              </SettingRow>
+
               <SettingRow
                 name={runtimeSettings.driverLabel}
                 description="阶段一固定通过 uv 驱动运行时"
@@ -222,4 +288,23 @@ export function SettingsPage({
       </div>
     </div>
   );
+}
+
+function formatEnvironmentStatus(status: EnvironmentProbe['status']) {
+  switch (status) {
+    case 'workspace-invalid':
+      return '工作目录无效';
+    case 'uv-unavailable':
+      return 'uv 不可用';
+    case 'python-unavailable':
+      return 'Python 不可用';
+    case 'torch-unavailable':
+      return 'torch 不可用';
+    case 'torch-cpu-ready':
+      return 'torch CPU 就绪';
+    case 'torch-gpu-ready':
+      return 'torch GPU 就绪';
+    default:
+      return status;
+  }
 }

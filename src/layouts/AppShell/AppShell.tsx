@@ -9,17 +9,23 @@ import {
   type ConsoleLogEntry,
 } from '../../services/launcher/launcher';
 import {
+  chooseWorkspaceRoot,
   enqueueDownload,
   exportConsoleLogs,
   inspectRuntime,
   listDownloadTasks,
   openManagedPath,
+  probeEnvironment,
   subscribeRuntimeEvents,
+  useRepoWorkspaceRoot,
 } from '../../services/runtime/bridge';
 import {
   applyRuntimeEvent,
   buildManagedFolderItems,
   createConsoleLogFromRuntimeEvent,
+  getQueueSummary,
+  isEnvironmentReady,
+  type EnvironmentProbe,
   type ManagedFolderItem,
   type RuntimeInspection,
   type RuntimeTaskRecord,
@@ -38,6 +44,7 @@ function toErrorMessage(error: unknown) {
 export function AppShell() {
   const [activePage, setActivePage] = useState<PageId>('home');
   const [theme, setTheme] = useState<ThemeMode>(() => readStoredTheme() ?? 'night');
+  const [environmentProbe, setEnvironmentProbe] = useState<EnvironmentProbe | null>(null);
   const [inspection, setInspection] = useState<RuntimeInspection | null>(null);
   const [tasks, setTasks] = useState<RuntimeTaskRecord[]>([]);
   const [folders, setFolders] = useState<ManagedFolderItem[]>([]);
@@ -55,16 +62,28 @@ export function AppShell() {
 
     void (async () => {
       try {
-        const [nextInspection, nextTasks] = await Promise.all([
-          inspectRuntime(),
+        const [nextProbe, nextTasks] = await Promise.all([
+          probeEnvironment(),
           listDownloadTasks(),
         ]);
         if (disposed) {
           return;
         }
+        setEnvironmentProbe(nextProbe);
+        setTasks(nextTasks);
+
+        if (!isEnvironmentReady(nextProbe)) {
+          setInspection(null);
+          setFolders([]);
+          return;
+        }
+
+        const nextInspection = await inspectRuntime();
+        if (disposed) {
+          return;
+        }
         setInspection(nextInspection);
         setFolders(buildManagedFolderItems(nextInspection));
-        setTasks(nextTasks);
       } catch (error) {
         if (disposed) {
           return;
@@ -109,6 +128,14 @@ export function AppShell() {
   }, []);
 
   async function handleDownloadGenieBase() {
+    if (!isEnvironmentReady(environmentProbe)) {
+      setLogs((current) => [
+        ...current,
+        createConsoleLog('stderr', '环境未就绪，已禁止执行运行时脚本'),
+      ]);
+      return;
+    }
+
     try {
       const task = await enqueueDownload('genie-base');
       setTasks((current) => {
@@ -125,6 +152,48 @@ export function AppShell() {
       setLogs((current) => [
         ...current,
         createConsoleLog('stderr', `创建下载任务失败: ${toErrorMessage(error)}`),
+      ]);
+    }
+  }
+
+  async function handleWorkspaceProbe(nextProbe: EnvironmentProbe) {
+    setEnvironmentProbe(nextProbe);
+    setInspection(null);
+    setFolders([]);
+    setTasks([]);
+
+    if (!isEnvironmentReady(nextProbe)) {
+      return;
+    }
+
+    const nextInspection = await inspectRuntime();
+    setInspection(nextInspection);
+    setFolders(buildManagedFolderItems(nextInspection));
+  }
+
+  async function handleChooseWorkspaceRoot() {
+    try {
+      const nextProbe = await chooseWorkspaceRoot();
+      if (!nextProbe) {
+        return;
+      }
+      await handleWorkspaceProbe(nextProbe);
+    } catch (error) {
+      setLogs((current) => [
+        ...current,
+        createConsoleLog('stderr', `切换工作目录失败: ${toErrorMessage(error)}`),
+      ]);
+    }
+  }
+
+  async function handleUseRepoWorkspaceRoot() {
+    try {
+      const nextProbe = await useRepoWorkspaceRoot();
+      await handleWorkspaceProbe(nextProbe);
+    } catch (error) {
+      setLogs((current) => [
+        ...current,
+        createConsoleLog('stderr', `恢复默认工作目录失败: ${toErrorMessage(error)}`),
       ]);
     }
   }
@@ -164,6 +233,15 @@ export function AppShell() {
     setLogs([]);
   }
 
+  const runtimeMode =
+    environmentProbe?.mode ?? inspection?.environment.mode ?? 'checking';
+  const latestMessage =
+    inspection?.latestMessage ??
+    environmentProbe?.message ??
+    '正在读取运行时信息';
+  const scriptsReady = isEnvironmentReady(environmentProbe);
+  const workspaceLocked = getQueueSummary(tasks).queueLength > 0;
+
   return (
     <div className="launcher-root" data-theme={theme}>
       <div className="app-shell">
@@ -185,10 +263,19 @@ export function AppShell() {
               logs,
               autoScroll,
               wrapLines,
+              latestMessage,
               onOpenModels: () => setActivePage('models'),
               onDownloadGenieBase: handleDownloadGenieBase,
               onOpenPath: handleOpenManagedPath,
               runtimeDriver: inspection?.runtimeDriver ?? 'uv',
+              runtimeMode,
+              scriptsReady,
+              workspaceLocked,
+              workspaceRoot:
+                environmentProbe?.workspaceRoot ?? inspection?.managedPaths[0]?.path ?? '',
+              environmentProbe,
+              onChooseWorkspaceRoot: handleChooseWorkspaceRoot,
+              onUseRepoWorkspaceRoot: handleUseRepoWorkspaceRoot,
               pythonPath: inspection?.pythonPath ?? '',
               onSetAutoScroll: setAutoScroll,
               onSetWrapLines: setWrapLines,

@@ -1,10 +1,23 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import type {
+  EnvironmentProbe,
   RuntimeEvent,
   RuntimeInspection,
   RuntimeTaskRecord,
 } from './runtime';
+
+export function probeEnvironment() {
+  return invoke<EnvironmentProbe>('probe_environment');
+}
+
+export function chooseWorkspaceRoot() {
+  return invoke<EnvironmentProbe | null>('choose_workspace_root');
+}
+
+export function useRepoWorkspaceRoot() {
+  return invoke<EnvironmentProbe>('use_repo_workspace_root');
+}
 
 export function inspectRuntime() {
   return invoke<RuntimeInspection>('inspect_runtime');

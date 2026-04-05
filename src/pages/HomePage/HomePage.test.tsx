@@ -65,8 +65,10 @@ describe('HomePage', () => {
         inspection={inspection}
         tasks={tasks}
         folders={folders}
+        latestMessage="运行驱动 uv，当前环境 CPU"
         onOpenPath={() => undefined}
         onOpenModels={() => undefined}
+        runtimeMode="cpu"
       />,
     );
 
@@ -110,8 +112,10 @@ describe('HomePage', () => {
         inspection={inspection}
         tasks={tasks}
         folders={folders}
+        latestMessage="运行驱动 uv，当前环境 CPU"
         onOpenPath={onOpenPath}
         onOpenModels={onOpenModels}
+        runtimeMode="cpu"
       />,
     );
 

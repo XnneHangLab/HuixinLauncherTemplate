@@ -1,14 +1,32 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { vi } from 'vitest';
 import { SettingsPage } from './SettingsPage';
 
 describe('SettingsPage', () => {
   it('renders settings controls and switches tabs', async () => {
     const user = userEvent.setup();
+    const onChooseWorkspaceRoot = vi.fn();
+    const onUseRepoWorkspaceRoot = vi.fn();
 
     render(
       <SettingsPage
         runtimeDriver="uv"
+        workspaceRoot="/repo"
+        workspaceLocked={false}
+        environmentProbe={{
+          workspaceRoot: '/repo',
+          repoRoot: '/repo',
+          status: 'torch-cpu-ready',
+          mode: 'cpu',
+          torchAvailable: true,
+          torchVersion: '2.6.0+cpu',
+          cudaAvailable: false,
+          issues: [],
+          message: 'torch 已就绪: CPU',
+        }}
+        onChooseWorkspaceRoot={onChooseWorkspaceRoot}
+        onUseRepoWorkspaceRoot={onUseRepoWorkspaceRoot}
         pythonPath=""
       />,
     );
@@ -34,6 +52,8 @@ describe('SettingsPage', () => {
     );
     expect(screen.getByLabelText('运行驱动')).toHaveValue('uv');
     expect(screen.getByLabelText('运行驱动')).toBeDisabled();
+    expect(screen.getByLabelText('工作目录')).toHaveValue('/repo');
+    expect(screen.getByLabelText('环境状态')).toHaveValue('torch CPU 就绪');
     expect(screen.getByLabelText('Python 路径')).toHaveValue('');
     expect(screen.getByLabelText('Python 路径')).toBeDisabled();
     expect(screen.getByLabelText('代理服务器地址')).toHaveValue(
@@ -42,6 +62,12 @@ describe('SettingsPage', () => {
     expect(
       screen.getByRole('button', { name: '将代理应用到 Git' }),
     ).toHaveAttribute('aria-pressed', 'true');
+
+    await user.click(screen.getByRole('button', { name: '使用当前项目目录' }));
+    expect(onUseRepoWorkspaceRoot).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByRole('button', { name: '选择工作目录' }));
+    expect(onChooseWorkspaceRoot).toHaveBeenCalledTimes(1);
 
     await user.click(screen.getByRole('tab', { name: '关于' }));
     expect(screen.getByRole('tab', { name: '关于' })).toHaveAttribute(
@@ -59,5 +85,32 @@ describe('SettingsPage', () => {
     expect(
       screen.getByText('XnneHangLab Launcher Template'),
     ).toBeInTheDocument();
+  });
+
+  it('disables workspace switching while queue is active', () => {
+    render(
+      <SettingsPage
+        runtimeDriver="uv"
+        workspaceRoot="/repo"
+        workspaceLocked
+        environmentProbe={{
+          workspaceRoot: '/repo',
+          repoRoot: '/repo',
+          status: 'torch-unavailable',
+          mode: null,
+          torchAvailable: false,
+          torchVersion: null,
+          cudaAvailable: false,
+          issues: ['No module named torch'],
+          message: 'torch 不可用',
+        }}
+        onChooseWorkspaceRoot={() => undefined}
+        onUseRepoWorkspaceRoot={() => undefined}
+        pythonPath=""
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: '使用当前项目目录' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '选择工作目录' })).toBeDisabled();
   });
 });

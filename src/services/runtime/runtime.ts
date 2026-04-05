@@ -3,6 +3,13 @@ import { createConsoleLog, type ConsoleLogEntry } from '../launcher/launcher';
 export type RuntimeMode = 'cpu' | 'gpu';
 export type ResourceStatus = 'missing' | 'partial' | 'ready';
 export type RuntimeDriver = 'uv';
+export type EnvironmentProbeStatus =
+  | 'workspace-invalid'
+  | 'uv-unavailable'
+  | 'python-unavailable'
+  | 'torch-unavailable'
+  | 'torch-cpu-ready'
+  | 'torch-gpu-ready';
 export type DownloadTaskStatus =
   | 'queued'
   | 'preparing'
@@ -33,6 +40,18 @@ export interface ManagedPath {
   key: string;
   label: string;
   path: string;
+}
+
+export interface EnvironmentProbe {
+  workspaceRoot: string;
+  repoRoot: string;
+  status: EnvironmentProbeStatus;
+  mode: RuntimeMode | null;
+  torchAvailable: boolean;
+  torchVersion: string | null;
+  cudaAvailable: boolean;
+  issues: string[];
+  message: string;
 }
 
 export interface RuntimeInspection {
@@ -156,6 +175,13 @@ export function getQueueSummary(tasks: RuntimeTaskRecord[]) {
       .length,
     activeTask,
   };
+}
+
+export function isEnvironmentReady(probe: EnvironmentProbe | null) {
+  return (
+    probe?.status === 'torch-cpu-ready' ||
+    probe?.status === 'torch-gpu-ready'
+  );
 }
 
 function buildRuntimeTaskLabel(target: string) {

@@ -45,3 +45,17 @@ pub struct PythonEnvelope {
     pub kind: String,
     pub payload: serde_json::Value,
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct EnvironmentProbePayload {
+    pub workspace_root: String,
+    pub repo_root: String,
+    pub status: String,
+    pub mode: Option<String>,
+    pub torch_available: bool,
+    pub torch_version: Option<String>,
+    pub cuda_available: bool,
+    pub issues: Vec<String>,
+    pub message: String,
+}

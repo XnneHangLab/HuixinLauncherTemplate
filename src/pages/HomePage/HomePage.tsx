@@ -14,20 +14,23 @@ interface HomePageProps {
   inspection: RuntimeInspection | null;
   tasks: RuntimeTaskRecord[];
   folders: ManagedFolderItem[];
+  latestMessage: string;
   onOpenPath: (pathKey: string) => void;
   onOpenModels: () => void;
+  runtimeMode: string;
 }
 
 export function HomePage({
   inspection,
   tasks,
   folders,
+  latestMessage,
   onOpenPath,
   onOpenModels,
+  runtimeMode,
 }: HomePageProps) {
   const queueSummary = getQueueSummary(tasks);
-  const genieStatus = inspection?.resources['genie-base']?.status ?? 'missing';
-  const runtimeMode = inspection?.environment.mode ?? 'cpu';
+  const genieStatus = inspection?.resources['genie-base']?.status ?? '未检查';
 
   return (
     <div className="home-page">
@@ -50,7 +53,7 @@ export function HomePage({
           runtimeMode={runtimeMode}
           genieStatus={genieStatus}
           queueLength={queueSummary.queueLength}
-          latestMessage={inspection?.latestMessage ?? '正在读取运行时信息'}
+          latestMessage={latestMessage}
           onOpenModels={onOpenModels}
         />
       </div>

@@ -147,6 +147,29 @@
   font-size: 14px;
 }
 
+.settings-shell .workspace-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.settings-shell .workspace-input {
+  width: 320px;
+}
+
+.settings-shell .workspace-button {
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 9px;
+  border: 1px solid var(--input-border);
+  background: var(--card-bg-start);
+  color: var(--text);
+}
+
+.settings-shell .workspace-button:disabled {
+  opacity: 0.5;
+}
+
 .settings-shell .switch {
   position: relative;
   width: 42px;
@@ -203,5 +226,14 @@
 @media (max-width: 900px) {
   .settings-shell .proxy-input {
     width: 170px;
+  }
+
+  .settings-shell .workspace-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .settings-shell .workspace-input {
+    width: 220px;
   }
 }

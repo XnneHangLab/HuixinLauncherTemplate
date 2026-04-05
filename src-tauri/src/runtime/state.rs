@@ -82,19 +82,50 @@ impl QueueState {
             task.updated_at = current_timestamp();
         }
     }
+
+    pub fn has_active_tasks(&self) -> bool {
+        self.worker_running
+            || self
+                .tasks
+                .iter()
+                .any(|task| matches!(
+                    task.status,
+                    TaskStatus::Queued
+                        | TaskStatus::Preparing
+                        | TaskStatus::Downloading
+                        | TaskStatus::Verifying
+                ))
+    }
+
+    pub fn reset_for_workspace_switch(&mut self) {
+        self.next_id = 0;
+        self.tasks.clear();
+        self.waiting.clear();
+        self.worker_running = false;
+    }
 }
 
 pub struct RuntimeState {
-    pub workspace_root: PathBuf,
+    pub repo_root: PathBuf,
+    pub workspace_root: Arc<Mutex<PathBuf>>,
     pub queue: Arc<Mutex<QueueState>>,
 }
 
 impl RuntimeState {
-    pub fn new(workspace_root: PathBuf) -> Self {
+    pub fn new(repo_root: PathBuf, workspace_root: PathBuf) -> Self {
         Self {
-            workspace_root,
+            repo_root,
+            workspace_root: Arc::new(Mutex::new(workspace_root)),
             queue: Arc::new(Mutex::new(QueueState::default())),
         }
+    }
+
+    pub fn current_workspace_root(&self) -> PathBuf {
+        self.workspace_root.lock().unwrap().clone()
+    }
+
+    pub fn set_workspace_root(&self, next: PathBuf) {
+        *self.workspace_root.lock().unwrap() = next;
     }
 }
 
@@ -106,17 +137,21 @@ pub fn current_timestamp() -> String {
     seconds.to_string()
 }
 
-pub fn resolve_workspace_root() -> Result<PathBuf, String> {
-    if let Ok(value) = std::env::var("XH_VOICE_WORKSPACE_ROOT") {
-        return Ok(PathBuf::from(value));
-    }
-
+pub fn resolve_repo_root() -> Result<PathBuf, String> {
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     manifest_dir
         .parent()
         .and_then(|path| path.parent())
         .map(|path| path.to_path_buf())
         .ok_or_else(|| "failed to resolve workspace root from launcher/src-tauri".to_string())
+}
+
+pub fn resolve_workspace_root(repo_root: &PathBuf) -> Result<PathBuf, String> {
+    if let Ok(value) = std::env::var("XH_VOICE_WORKSPACE_ROOT") {
+        return Ok(PathBuf::from(value));
+    }
+
+    Ok(repo_root.clone())
 }
 
 #[cfg(test)]
@@ -186,5 +221,18 @@ mod tests {
         let next = queue.take_next_task_or_mark_idle().unwrap();
         assert_eq!(next.task_id, task.task_id);
         assert_eq!(next.target, "genie-base");
+    }
+
+    #[test]
+    fn has_active_tasks_only_reports_live_queue_items() {
+        let mut queue = QueueState::default();
+        assert!(!queue.has_active_tasks());
+
+        let task = queue.enqueue("genie-base".to_string(), "GenieData 基础资源".to_string());
+        assert!(queue.has_active_tasks());
+
+        queue.apply_update(&task.task_id, TaskStatus::Completed, "完成".to_string(), 3, 3);
+        queue.worker_running = false;
+        assert!(!queue.has_active_tasks());
     }
 }

@@ -9,6 +9,7 @@ interface ModelsPageProps {
   tasks: RuntimeTaskRecord[];
   onDownloadGenieBase: () => void;
   onOpenPath: (pathKey: string) => void;
+  scriptsReady: boolean;
 }
 
 export function ModelsPage({
@@ -16,6 +17,7 @@ export function ModelsPage({
   tasks,
   onDownloadGenieBase,
   onOpenPath,
+  scriptsReady,
 }: ModelsPageProps) {
   const genieResource = inspection?.resources['genie-base'];
 
@@ -25,8 +27,11 @@ export function ModelsPage({
         <div>
           <h1>模型管理</h1>
           <p>当前阶段只管理 GenieData 基础资源，角色包后续独立加入。</p>
+          {!scriptsReady ? (
+            <p>环境未就绪，暂不允许执行下载脚本。</p>
+          ) : null}
         </div>
-        <button type="button" onClick={onDownloadGenieBase}>
+        <button type="button" onClick={onDownloadGenieBase} disabled={!scriptsReady}>
           下载 GenieData
         </button>
       </header>

@@ -50,6 +50,7 @@ describe('ModelsPage', () => {
         ]}
         onDownloadGenieBase={onDownloadGenieBase}
         onOpenPath={onOpenPath}
+        scriptsReady
       />,
     );
 
@@ -65,5 +66,20 @@ describe('ModelsPage', () => {
 
     await user.click(screen.getByRole('button', { name: '打开 Genie 目录' }));
     expect(onOpenPath).toHaveBeenCalledWith('genieBase');
+  });
+
+  it('disables download action when runtime scripts are blocked', () => {
+    render(
+      <ModelsPage
+        inspection={null}
+        tasks={[]}
+        onDownloadGenieBase={() => undefined}
+        onOpenPath={() => undefined}
+        scriptsReady={false}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: '下载 GenieData' })).toBeDisabled();
+    expect(screen.getByText('环境未就绪，暂不允许执行下载脚本。')).toBeInTheDocument();
   });
 });
