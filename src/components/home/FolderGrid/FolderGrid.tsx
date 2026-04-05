@@ -25,7 +25,6 @@ export function FolderGrid({ items, onOpen }: FolderGridProps) {
           key={item.key}
           type="button"
           className="folder-card folder-card--placeholder"
-          disabled
           aria-label={item.title}
         >
           <span className="folder-left">

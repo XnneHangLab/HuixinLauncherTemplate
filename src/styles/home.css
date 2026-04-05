@@ -230,9 +230,8 @@
 }
 
 .home-page .folder-card--placeholder {
-  opacity: 0.38;
+  opacity: 0.46;
   cursor: default;
-  pointer-events: none;
 }
 
 .home-page .meta {
