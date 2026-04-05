@@ -136,41 +136,26 @@ cargo check --manifest-path src-tauri/Cargo.toml
 ## 项目结构
 
 ```text
-src/
-  app/
-  components/
-  data/
-  layouts/
-  pages/
-  services/
-  styles/
-src-tauri/
-assets/
+.
+├── src/                         # 前端源码
+│   ├── components/              # React 组件
+│   │   └── ui/                  # shadcn/ui 组件
+│   ├── i18n/                    # 国际化
+│   │   ├── index.ts             # i18n 配置入口
+│   │   └── locales/             # 多语言文案文件
+│   ├── lib/                     # 通用工具函数
+│   ├── pages/                   # 页面组件
+│   │   ├── home.tsx             # 主窗口页面
+│   │   ├── about.tsx            # 关于页面
+│   │   └── settings.tsx         # 设置页面
+│   └── main.tsx                 # 前端入口与基于 pathname 的页面选择器
+├── src-tauri/                   # Tauri / Rust 后端
+│   ├── src/                     # Rust 源码
+│   └── tauri.conf.json          # Tauri 配置
+├── docs/                        # 文档目录
+│   ├── AUTO_UPDATE.md           # 自动更新说明
+│   ├── I18N.md                  # 国际化说明
+│   └── GLOBAL_SHORTCUT.md       # 全局快捷键说明
+├── components.json              # shadcn/ui 配置
+└── package.json                 # 前端依赖与脚本
 ```
-
-## 后续扩展方向
-
-> [!WARNING]
-> 当前仓库还是模板阶段，后续重点不在“堆页面”，而在把启动器真正做成可复用的产品骨架。
-
-计划继续扩展：
-
-- 模型下载与安装入口
-- 环境检查与故障诊断
-- 启动流程与进程管理
-- 多产品换皮能力
-- 更完整的品牌视觉系统
-
-## 与 XnneHangLab 的关系
-
-如果你需要完整项目能力，请前往主仓库：
-
-- [XnneHangLab](https://github.com/XnneHangLab/XnneHangLab)
-
-如果你需要一个：
-
-- 更适合做桌面端入口
-- 更适合继续产品化打磨
-- 更适合复用的 Launcher 模板
-
-那当前仓库就是这个方向。
