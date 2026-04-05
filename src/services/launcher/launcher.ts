@@ -1,4 +1,5 @@
 export type ConsoleLogKind = 'system' | 'stdout' | 'stderr';
+export type LaunchState = 'idle' | 'running';
 
 export interface ConsoleLogEntry {
   id: string;

@@ -8,12 +8,22 @@ import {
   mirrorSettings,
   preferenceSettings,
   proxyDefaults,
+  runtimeSettings,
   settingsTabs,
   type SettingsTabId,
 } from '../../data/settings';
+import type { RuntimeDriver } from '../../services/runtime/runtime';
 import '../../styles/settings.css';
 
-export function SettingsPage() {
+interface SettingsPageProps {
+  runtimeDriver: RuntimeDriver;
+  pythonPath: string;
+}
+
+export function SettingsPage({
+  runtimeDriver,
+  pythonPath,
+}: SettingsPageProps) {
   const [activeTab, setActiveTab] = useState<SettingsTabId>('general');
   const [proxyAddress, setProxyAddress] = useState(proxyDefaults.address);
   const [proxyToggles, setProxyToggles] = useState({
@@ -48,6 +58,39 @@ export function SettingsPage() {
             role="tabpanel"
             aria-labelledby="settings-tab-general"
           >
+            <div className="group-title group-title--standalone">运行设置</div>
+
+            <SettingCard>
+              <SettingRow
+                name={runtimeSettings.driverLabel}
+                description="阶段一固定通过 uv 驱动运行时"
+                icon="Uv"
+              >
+                <input
+                  className="proxy-input"
+                  aria-label={runtimeSettings.driverLabel}
+                  value={runtimeDriver}
+                  disabled
+                  readOnly
+                />
+              </SettingRow>
+
+              <SettingRow
+                name={runtimeSettings.pythonPathLabel}
+                description="后续按运行驱动扩展显式 Python 路径"
+                icon="Py"
+              >
+                <input
+                  className="proxy-input"
+                  aria-label={runtimeSettings.pythonPathLabel}
+                  value={pythonPath}
+                  placeholder={runtimeSettings.pythonPathPlaceholder}
+                  disabled
+                  readOnly
+                />
+              </SettingRow>
+            </SettingCard>
+
             <div className="group-title group-title--standalone">网络设置</div>
 
             <SettingCard>

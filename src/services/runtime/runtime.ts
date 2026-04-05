@@ -12,6 +12,23 @@ export type DownloadTaskStatus =
   | 'failed'
   | 'cancelled';
 
+const downloadTaskStatuses: DownloadTaskStatus[] = [
+  'queued',
+  'preparing',
+  'downloading',
+  'verifying',
+  'completed',
+  'failed',
+  'cancelled',
+];
+
+const activeStatuses: DownloadTaskStatus[] = [
+  'queued',
+  'preparing',
+  'downloading',
+  'verifying',
+];
+
 export interface ManagedPath {
   key: string;
   label: string;
@@ -58,7 +75,7 @@ export interface RuntimeEvent {
   event: string;
   taskId: string;
   target: string;
-  status: DownloadTaskStatus;
+  status: string;
   message: string;
   progressCurrent: number;
   progressTotal: number;
@@ -98,11 +115,14 @@ export function applyRuntimeEvent(
 ): RuntimeTaskRecord[] {
   const next = [...current];
   const index = next.findIndex((item) => item.taskId === event.taskId);
+  const previous = index === -1 ? null : next[index];
+  const label =
+    previous?.label.trim() || buildRuntimeTaskLabel(event.target);
   const task: RuntimeTaskRecord = {
     taskId: event.taskId,
     target: event.target,
-    label: event.target === 'genie-base' ? 'GenieData 基础资源' : event.target,
-    status: event.status,
+    label,
+    status: normalizeRuntimeTaskStatus(event.status),
     message: event.message,
     progressCurrent: event.progressCurrent,
     progressTotal: event.progressTotal,
@@ -121,20 +141,32 @@ export function applyRuntimeEvent(
 export function createConsoleLogFromRuntimeEvent(
   event: RuntimeEvent,
 ): ConsoleLogEntry {
-  const kind = event.status === 'failed' ? 'stderr' : 'system';
+  const kind =
+    normalizeRuntimeTaskStatus(event.status) === 'failed' ? 'stderr' : 'system';
   return createConsoleLog(kind, `${event.target}: ${event.message}`);
 }
 
 export function getQueueSummary(tasks: RuntimeTaskRecord[]) {
   const activeTask =
-    tasks.find((task) =>
-      ['queued', 'preparing', 'downloading', 'verifying'].includes(task.status),
-    ) ?? null;
+    tasks.find((task) => activeStatuses.includes(task.status)) ?? null;
 
   return {
-    queueLength: tasks.filter((task) =>
-      ['queued', 'preparing', 'downloading', 'verifying'].includes(task.status),
-    ).length,
+    queueLength: tasks.filter((task) => activeStatuses.includes(task.status))
+      .length,
     activeTask,
   };
+}
+
+function buildRuntimeTaskLabel(target: string) {
+  return target === 'genie-base' ? 'GenieData 基础资源' : target;
+}
+
+function normalizeRuntimeTaskStatus(status: string): DownloadTaskStatus {
+  if (
+    downloadTaskStatuses.includes(status as DownloadTaskStatus)
+  ) {
+    return status as DownloadTaskStatus;
+  }
+
+  return 'downloading';
 }

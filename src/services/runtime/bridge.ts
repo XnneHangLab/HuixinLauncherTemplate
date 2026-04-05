@@ -30,15 +30,24 @@ export async function subscribeRuntimeEvents(
   onEvent: (event: RuntimeEvent) => void,
   onRawLog: (line: string) => void,
 ) {
-  const unlistenEvent = await listen<RuntimeEvent>('runtime:event', (event) => {
-    onEvent(event.payload);
-  });
-  const unlistenRaw = await listen<string>('runtime:raw-log', (event) => {
-    onRawLog(event.payload);
-  });
+  const unlistenCallbacks: Array<() => void> = [];
+
+  try {
+    const unlistenEvent = await listen<RuntimeEvent>('runtime:event', (event) => {
+      onEvent(event.payload);
+    });
+    unlistenCallbacks.push(unlistenEvent);
+
+    const unlistenRaw = await listen<string>('runtime:raw-log', (event) => {
+      onRawLog(event.payload);
+    });
+    unlistenCallbacks.push(unlistenRaw);
+  } catch (error) {
+    unlistenCallbacks.forEach((cleanup) => cleanup());
+    throw error;
+  }
 
   return () => {
-    unlistenEvent();
-    unlistenRaw();
+    unlistenCallbacks.forEach((cleanup) => cleanup());
   };
 }

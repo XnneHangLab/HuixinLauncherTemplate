@@ -6,7 +6,12 @@ describe('SettingsPage', () => {
   it('renders settings controls and switches tabs', async () => {
     const user = userEvent.setup();
 
-    render(<SettingsPage />);
+    render(
+      <SettingsPage
+        runtimeDriver="uv"
+        pythonPath=""
+      />,
+    );
 
     expect(
       screen.getByRole('tab', { name: '一般设置', selected: true }),
@@ -27,6 +32,10 @@ describe('SettingsPage', () => {
       'id',
       'settings-panel-general',
     );
+    expect(screen.getByLabelText('运行驱动')).toHaveValue('uv');
+    expect(screen.getByLabelText('运行驱动')).toBeDisabled();
+    expect(screen.getByLabelText('Python 路径')).toHaveValue('');
+    expect(screen.getByLabelText('Python 路径')).toBeDisabled();
     expect(screen.getByLabelText('代理服务器地址')).toHaveValue(
       'http://127.0.0.1:xxxx',
     );

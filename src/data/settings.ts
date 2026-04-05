@@ -86,3 +86,9 @@ export const aboutInfo = [
   '第一阶段聚焦于桌面壳和 UI 复刻。',
   '后续将逐步接入环境检查、下载和启动逻辑。',
 ];
+
+export const runtimeSettings = {
+  driverLabel: '运行驱动',
+  pythonPathLabel: 'Python 路径',
+  pythonPathPlaceholder: '阶段一未启用，后续按 driver 扩展',
+};
