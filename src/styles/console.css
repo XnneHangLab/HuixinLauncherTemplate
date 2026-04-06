@@ -115,31 +115,37 @@
 .console-log-list {
   display: flex;
   flex-direction: column;
+  padding: 8px 0;
+  font: 13px/1.6 "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 }
 
 .console-log {
-  position: relative;
-  padding: 14px 18px 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.console-log:first-child {
-  border-top: 0;
-}
-
-.console-log__meta {
   display: flex;
+  align-items: baseline;
   gap: 10px;
-  margin-bottom: 8px;
+  padding: 1px 18px;
+}
+
+.console-log__time {
+  flex-shrink: 0;
+  font-size: 11px;
   color: var(--console-panel-muted);
-  font-size: 12px;
+  opacity: 0.45;
+  user-select: none;
 }
 
 .console-log__text {
   margin: 0;
-  font: 13px/1.65 "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-  color: inherit;
+  font: inherit;
   white-space: pre;
+  color: inherit;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.console-log-panel.is-wrap .console-log__text {
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .console-log--system {
@@ -152,27 +158,4 @@
 
 .console-log--stderr {
   color: var(--console-stderr);
-}
-
-.console-log__copy {
-  position: absolute;
-  top: 12px;
-  right: 14px;
-  height: 26px;
-  padding: 0 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--console-panel-text);
-  opacity: 0.16;
-  transition: opacity 0.18s ease, background 0.18s ease;
-}
-
-.console-log:hover .console-log__copy,
-.console-log:focus-within .console-log__copy {
-  opacity: 0.78;
-}
-
-.console-log__copy:hover {
-  background: rgba(255, 255, 255, 0.08);
 }

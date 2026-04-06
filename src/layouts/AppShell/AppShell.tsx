@@ -405,10 +405,6 @@ export function AppShell() {
     }
   }
 
-  function handleCopyLog(text: string) {
-    void navigator.clipboard?.writeText(text);
-  }
-
   function handleClearLogs() {
     setLogs([]);
   }
@@ -468,7 +464,6 @@ export function AppShell() {
               onSetAutoScroll: setAutoScroll,
               onSetWrapLines: setWrapLines,
               onClearLogs: handleClearLogs,
-              onCopyLog: handleCopyLog,
               onExportLogs: handleExportLogs,
             })}
           </section>

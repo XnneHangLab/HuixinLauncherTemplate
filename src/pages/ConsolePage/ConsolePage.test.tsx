@@ -15,7 +15,6 @@ describe('ConsolePage', () => {
         onSetAutoScroll={() => undefined}
         onSetWrapLines={() => undefined}
         onClearLogs={() => undefined}
-        onCopyLog={() => undefined}
         onExportLogs={() => undefined}
       />,
     );
@@ -25,11 +24,12 @@ describe('ConsolePage', () => {
       screen.getByText('开始检查环境或下载资源后，这里会显示结构化事件和原始输出'),
     ).toBeInTheDocument();
     expect(screen.getByText('运行驱动 uv')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '全部复制' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '导出日志' })).toBeDisabled();
   });
 
-  it('renders runtime queue metadata and triggers row/tool actions', async () => {
+  it('renders runtime queue metadata and triggers toolbar actions', async () => {
     const user = userEvent.setup();
-    const onCopyLog = vi.fn();
     const onClearLogs = vi.fn();
     const onExportLogs = vi.fn();
 
@@ -51,7 +51,7 @@ describe('ConsolePage', () => {
         logs={[
           {
             id: 'log-1',
-            time: '2026-04-04 15:00:00',
+            time: '14:30:00',
             kind: 'system',
             text: 'genie-base: 正在下载',
           },
@@ -61,16 +61,13 @@ describe('ConsolePage', () => {
         onSetAutoScroll={() => undefined}
         onSetWrapLines={() => undefined}
         onClearLogs={onClearLogs}
-        onCopyLog={onCopyLog}
         onExportLogs={onExportLogs}
       />,
     );
 
     expect(screen.getByText('运行驱动 uv')).toBeInTheDocument();
     expect(screen.getByText('当前任务 GenieData 基础资源')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: '复制日志 1' }));
-    expect(onCopyLog).toHaveBeenCalledWith('genie-base: 正在下载');
+    expect(screen.getByText('genie-base: 正在下载')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '清空日志' }));
     expect(onClearLogs).toHaveBeenCalled();

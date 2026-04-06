@@ -46,7 +46,6 @@ interface RenderPageOptions {
   onSetAutoScroll: (next: boolean) => void;
   onSetWrapLines: (next: boolean) => void;
   onClearLogs: () => void;
-  onCopyLog: (text: string) => void;
   onExportLogs: () => void;
 }
 
@@ -139,7 +138,6 @@ export function renderPage(
           onSetAutoScroll={options.onSetAutoScroll}
           onSetWrapLines={options.onSetWrapLines}
           onClearLogs={options.onClearLogs}
-          onCopyLog={options.onCopyLog}
           onExportLogs={options.onExportLogs}
         />
       );
