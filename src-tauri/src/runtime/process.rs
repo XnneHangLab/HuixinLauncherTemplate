@@ -61,6 +61,14 @@ enum WebuiCleanupPlan {
     },
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum WebuiPortProbePlan {
+    Command {
+        program: &'static str,
+        args: Vec<String>,
+    },
+}
+
 pub fn run_inspect_command(repo_root: &Path, workspace_root: &Path, driver: &RuntimeDriverConfig, app: &AppHandle) -> Result<serde_json::Value, String> {
     emit_raw_log(app, "[inspect] 正在读取运行时信息 …");
     let output = build_python_command_for_driver(
@@ -713,6 +721,117 @@ fn build_webui_cleanup_plan(pid: u32, platform: ProcessPlatform) -> WebuiCleanup
     }
 }
 
+fn build_webui_port_probe_plan(port: u16, platform: ProcessPlatform) -> WebuiPortProbePlan {
+    match platform {
+        ProcessPlatform::Windows => WebuiPortProbePlan::Command {
+            program: "powershell",
+            args: vec![
+                "-NoProfile".to_string(),
+                "-Command".to_string(),
+                format!(
+                    "Get-NetTCPConnection -LocalPort {port} -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess"
+                ),
+            ],
+        },
+        ProcessPlatform::Unix => WebuiPortProbePlan::Command {
+            program: "lsof",
+            args: vec![
+                format!("-tiTCP:{port}"),
+                "-sTCP:LISTEN".to_string(),
+            ],
+        },
+    }
+}
+
+fn parse_listener_pids(output: &[u8]) -> Vec<u32> {
+    let mut parsed = String::from_utf8_lossy(output)
+        .split_whitespace()
+        .filter_map(|value| value.parse::<u32>().ok())
+        .collect::<Vec<_>>();
+    parsed.sort_unstable();
+    parsed.dedup();
+    parsed
+}
+
+fn find_listener_pids_for_port(port: u16) -> Result<Vec<u32>, String> {
+    match current_process_platform() {
+        ProcessPlatform::Windows => {
+            let WebuiPortProbePlan::Command { program, args } =
+                build_webui_port_probe_plan(port, ProcessPlatform::Windows);
+            let output = Command::new(program)
+                .args(&args)
+                .output()
+                .map_err(|error| format!("failed to probe port {port}: {error}"))?;
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+                let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                let detail = if !stderr.is_empty() { stderr } else { stdout };
+                return Err(format!("failed to probe port {port}: {detail}"));
+            }
+            Ok(parse_listener_pids(&output.stdout))
+        }
+        ProcessPlatform::Unix => {
+            let candidates = vec![
+                build_webui_port_probe_plan(port, ProcessPlatform::Unix),
+                WebuiPortProbePlan::Command {
+                    program: "fuser",
+                    args: vec!["-n".to_string(), "tcp".to_string(), port.to_string()],
+                },
+            ];
+
+            for candidate in candidates {
+                let WebuiPortProbePlan::Command { program, args } = candidate;
+                let output = match Command::new(program).args(&args).output() {
+                    Ok(output) => output,
+                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
+                    Err(error) => {
+                        return Err(format!("failed to probe port {port} with {program}: {error}"));
+                    }
+                };
+
+                if output.status.success() {
+                    return Ok(parse_listener_pids(&output.stdout));
+                }
+
+                if !output.stdout.is_empty() {
+                    return Ok(parse_listener_pids(&output.stdout));
+                }
+            }
+
+            Ok(Vec::new())
+        }
+    }
+}
+
+pub fn cleanup_webui_port_conflicts(app: &AppHandle, port: u16) -> Result<Vec<u32>, String> {
+    let listener_pids = find_listener_pids_for_port(port)?;
+    if listener_pids.is_empty() {
+        return Ok(listener_pids);
+    }
+
+    for pid in &listener_pids {
+        emit_raw_log(
+            app,
+            &format!("[webui] 发现端口 {port} 残留监听进程，正在回收 pid {pid} …"),
+        );
+        terminate_webui_process_tree(*pid)?;
+    }
+
+    emit_raw_log(
+        app,
+        &format!(
+            "[webui] 已清理端口 {port} 残留监听进程: {}",
+            listener_pids
+                .iter()
+                .map(u32::to_string)
+                .collect::<Vec<_>>()
+                .join(", ")
+        ),
+    );
+
+    Ok(listener_pids)
+}
+
 #[cfg(unix)]
 fn configure_webui_command_for_process_tree(command: &mut Command) {
     use std::os::unix::process::CommandExt;
@@ -1023,8 +1142,9 @@ mod tests {
 
     use super::{
         build_terminal_failure_event, build_uv_python_command, build_webui_cleanup_plan,
-        managed_path_from_payload, runtime_event_from_python_payload, EnvironmentProbePayload,
-        ProcessPlatform, WebuiCleanupPlan,
+        build_webui_port_probe_plan, managed_path_from_payload, parse_listener_pids,
+        runtime_event_from_python_payload, EnvironmentProbePayload, ProcessPlatform,
+        WebuiCleanupPlan, WebuiPortProbePlan,
     };
 
     #[test]
@@ -1190,5 +1310,29 @@ mod tests {
         let plan = build_webui_cleanup_plan(4242, ProcessPlatform::Unix);
 
         assert_eq!(plan, WebuiCleanupPlan::UnixProcessGroup { pid: 4242 });
+    }
+
+    #[test]
+    fn webui_port_probe_plan_uses_powershell_on_windows() {
+        let plan = build_webui_port_probe_plan(7860, ProcessPlatform::Windows);
+
+        assert_eq!(
+            plan,
+            WebuiPortProbePlan::Command {
+                program: "powershell",
+                args: vec![
+                    "-NoProfile".to_string(),
+                    "-Command".to_string(),
+                    "Get-NetTCPConnection -LocalPort 7860 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess".to_string(),
+                ],
+            }
+        );
+    }
+
+    #[test]
+    fn parse_listener_pids_ignores_noise_and_deduplicates() {
+        let parsed = parse_listener_pids(b"4242\n\nnot-a-pid\n4242  5252\n");
+
+        assert_eq!(parsed, vec![4242, 5252]);
     }
 }

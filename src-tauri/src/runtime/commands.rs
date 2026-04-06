@@ -1,9 +1,10 @@
 use tauri::{AppHandle, State};
 
 use super::process::{
-    cleanup_webui_processes, drain_download_queue, ensure_environment_ready, open_path,
-    pick_python_path, pick_workspace_root, resolve_managed_path, run_inspect_command,
-    run_probe_command, spawn_webui_process, write_console_log,
+    cleanup_webui_port_conflicts, cleanup_webui_processes, drain_download_queue,
+    ensure_environment_ready, open_path, pick_python_path, pick_workspace_root,
+    resolve_managed_path, run_inspect_command, run_probe_command, spawn_webui_process,
+    write_console_log,
 };
 use super::state::{resolve_repo_root, resolve_workspace_root, RuntimeDriverConfig, RuntimeState};
 
@@ -186,6 +187,7 @@ pub async fn launch_webui(
     run_blocking_runtime_action(move || {
         ensure_environment_ready(&repo_root, &workspace_root, &driver, &app)?;
         cleanup_webui_processes(&app, &runtime_state)?;
+        cleanup_webui_port_conflicts(&app, 7860)?;
         spawn_webui_process(app, runtime_state, &repo_root, &workspace_root, &driver, 7860)
     })
     .await
