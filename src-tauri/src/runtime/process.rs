@@ -688,6 +688,19 @@ pub fn spawn_webui_process(
     );
     command.stdout(Stdio::piped()).stderr(Stdio::piped());
     command.env("GRADIO_ANALYTICS_ENABLED", "False");
+    // Ensure localhost is excluded from any system proxy so Gradio's post-launch
+    // self-check GET to localhost doesn't get intercepted and return 502.
+    let existing_no_proxy = std::env::var("NO_PROXY")
+        .or_else(|_| std::env::var("no_proxy"))
+        .unwrap_or_default();
+    let no_proxy = if existing_no_proxy.is_empty() {
+        "localhost,127.0.0.1".to_string()
+    } else if existing_no_proxy.contains("localhost") {
+        existing_no_proxy
+    } else {
+        format!("{},localhost,127.0.0.1", existing_no_proxy)
+    };
+    command.env("NO_PROXY", &no_proxy).env("no_proxy", &no_proxy);
 
     let mut child = command
         .spawn()
