@@ -27,6 +27,8 @@ interface RenderPageOptions {
   onOpenModels: () => void;
   onDownloadGenieBase: () => void;
   onDownloadGsvLite: () => void;
+  onDownloadQwenTts06b: () => void;
+  onDownloadQwenTts17b: () => void;
   onOpenPath: (pathKey: string) => void;
   runtimeDriver: RuntimeDriver;
   runtimeMode: string;
@@ -103,6 +105,8 @@ export function renderPage(
           fileProgress={options.fileProgress}
           onDownloadGenieBase={options.onDownloadGenieBase}
           onDownloadGsvLite={options.onDownloadGsvLite}
+          onDownloadQwenTts06b={options.onDownloadQwenTts06b}
+          onDownloadQwenTts17b={options.onDownloadQwenTts17b}
           scriptsReady={options.scriptsReady}
         />
       );

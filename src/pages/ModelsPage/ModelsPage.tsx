@@ -24,6 +24,22 @@ const MODEL_SPECS: ModelSpec[] = [
     tags: ['GPU'],
     requiresGpu: true,
   },
+  {
+    key: 'qwen-tts-0.6b',
+    title: 'Qwen3-TTS 0.6B',
+    description: '千问语音合成轻量版，仅 GPU 环境可用。',
+    icon: '🔊',
+    tags: ['GPU', '≥ 8GB'],
+    requiresGpu: true,
+  },
+  {
+    key: 'qwen-tts-1.7b',
+    title: 'Qwen3-TTS 1.7B',
+    description: '千问语音合成标准版，仅 GPU 环境可用。',
+    icon: '🔊',
+    tags: ['GPU', '12~16GB'],
+    requiresGpu: true,
+  },
 ];
 
 const taskStatusLabel: Record<string, string> = {
@@ -43,6 +59,8 @@ interface ModelsPageProps {
   fileProgress: FileProgress | null;
   onDownloadGenieBase: () => void;
   onDownloadGsvLite: () => void;
+  onDownloadQwenTts06b: () => void;
+  onDownloadQwenTts17b: () => void;
   scriptsReady: boolean;
 }
 
@@ -53,6 +71,8 @@ export function ModelsPage({
   fileProgress,
   onDownloadGenieBase,
   onDownloadGsvLite,
+  onDownloadQwenTts06b,
+  onDownloadQwenTts17b,
   scriptsReady,
 }: ModelsPageProps) {
   const gpuReady =
@@ -64,6 +84,10 @@ export function ModelsPage({
       onDownloadGenieBase();
     } else if (key === 'gsv-lite') {
       onDownloadGsvLite();
+    } else if (key === 'qwen-tts-0.6b') {
+      onDownloadQwenTts06b();
+    } else if (key === 'qwen-tts-1.7b') {
+      onDownloadQwenTts17b();
     }
   }
 
