@@ -8,6 +8,7 @@ import type { PageId } from '../data/nav';
 import type { ConsoleLogEntry } from '../services/launcher/launcher';
 import type {
   EnvironmentProbe,
+  FileProgress,
   ManagedFolderItem,
   RuntimeInspection,
   RuntimeDriver,
@@ -17,6 +18,7 @@ import type {
 interface RenderPageOptions {
   inspection: RuntimeInspection | null;
   tasks: RuntimeTaskRecord[];
+  fileProgress: FileProgress | null;
   folders: ManagedFolderItem[];
   logs: ConsoleLogEntry[];
   autoScroll: boolean;
@@ -98,6 +100,7 @@ export function renderPage(
           inspection={options.inspection}
           environmentProbe={options.environmentProbe}
           tasks={options.tasks}
+          fileProgress={options.fileProgress}
           onDownloadGenieBase={options.onDownloadGenieBase}
           onDownloadGsvLite={options.onDownloadGsvLite}
           scriptsReady={options.scriptsReady}

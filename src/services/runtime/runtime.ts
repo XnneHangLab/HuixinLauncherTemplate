@@ -101,6 +101,19 @@ export interface RuntimeEvent {
   progressTotal: number;
   progressUnit: string;
   timestamp: string;
+  // present only when event === 'download.file_progress'
+  desc?: string;
+  percent?: number;
+  downloaded?: string;
+  total?: string;
+}
+
+export interface FileProgress {
+  target: string;
+  desc: string;
+  percent: number;
+  downloaded?: string;
+  total?: string;
 }
 
 export interface ManagedFolderItem {

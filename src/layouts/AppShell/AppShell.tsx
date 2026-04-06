@@ -28,6 +28,7 @@ import {
   getQueueSummary,
   isEnvironmentReady,
   type EnvironmentProbe,
+  type FileProgress,
   type ManagedFolderItem,
   type RuntimeDriver,
   type RuntimeInspection,
@@ -50,6 +51,7 @@ export function AppShell() {
   const [environmentProbe, setEnvironmentProbe] = useState<EnvironmentProbe | null>(null);
   const [inspection, setInspection] = useState<RuntimeInspection | null>(null);
   const [tasks, setTasks] = useState<RuntimeTaskRecord[]>([]);
+  const [fileProgress, setFileProgress] = useState<FileProgress | null>(null);
   const [folders, setFolders] = useState<ManagedFolderItem[]>([]);
   const [logs, setLogs] = useState<ConsoleLogEntry[]>([]);
   const [autoScroll, setAutoScroll] = useState(true);
@@ -102,6 +104,19 @@ export function AppShell() {
 
     void subscribeRuntimeEvents(
       (event) => {
+        if (event.event === 'download.file_progress') {
+          setFileProgress({
+            target: event.target,
+            desc: event.desc ?? '',
+            percent: event.percent ?? 0,
+            downloaded: event.downloaded,
+            total: event.total,
+          });
+          return;
+        }
+        if (event.event === 'download.completed' || event.event === 'download.failed') {
+          setFileProgress(null);
+        }
         setTasks((current) => applyRuntimeEvent(current, event));
         setLogs((current) => [...current, createConsoleLogFromRuntimeEvent(event)]);
       },
@@ -321,6 +336,7 @@ export function AppShell() {
             {renderPage(activePage, {
               inspection,
               tasks,
+              fileProgress,
               folders,
               logs,
               autoScroll,

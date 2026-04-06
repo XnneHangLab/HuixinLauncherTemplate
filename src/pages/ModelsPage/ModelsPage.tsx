@@ -1,6 +1,7 @@
 import { ModelCard, type ModelSpec } from '../../components/models/ModelCard/ModelCard';
 import type {
   EnvironmentProbe,
+  FileProgress,
   RuntimeInspection,
   RuntimeTaskRecord,
 } from '../../services/runtime/runtime';
@@ -39,6 +40,7 @@ interface ModelsPageProps {
   inspection: RuntimeInspection | null;
   environmentProbe: EnvironmentProbe | null;
   tasks: RuntimeTaskRecord[];
+  fileProgress: FileProgress | null;
   onDownloadGenieBase: () => void;
   onDownloadGsvLite: () => void;
   scriptsReady: boolean;
@@ -48,6 +50,7 @@ export function ModelsPage({
   inspection,
   environmentProbe,
   tasks,
+  fileProgress,
   onDownloadGenieBase,
   onDownloadGsvLite,
   scriptsReady,
@@ -96,24 +99,49 @@ export function ModelsPage({
           <p className="models-page__queue-empty">暂无下载任务</p>
         ) : (
           <div className="models-page__task-list">
-            {tasks.map((task) => (
-              <div key={task.taskId} className="models-page__task">
-                <div className="models-page__task-info">
-                  <div className="models-page__task-label">{task.label}</div>
-                  <div className="models-page__task-msg">{task.message}</div>
+            {tasks.map((task) => {
+              const fp =
+                task.status === 'downloading' && fileProgress?.target === task.target
+                  ? fileProgress
+                  : null;
+              return (
+                <div key={task.taskId} className="models-page__task">
+                  <div className="models-page__task-info">
+                    <div className="models-page__task-label">{task.label}</div>
+                    <div className="models-page__task-msg">{task.message}</div>
+                  </div>
+                  <div className="models-page__task-right">
+                    <span
+                      className={`models-page__task-status models-page__task-status--${task.status}`}
+                    >
+                      {taskStatusLabel[task.status] ?? task.status}
+                    </span>
+                    <span className="models-page__task-progress">
+                      {task.progressCurrent} / {task.progressTotal}
+                    </span>
+                  </div>
+                  {fp && (
+                    <div className="models-page__file-progress">
+                      <div className="models-page__file-progress-bar">
+                        <div
+                          className="models-page__file-progress-fill"
+                          style={{ width: `${fp.percent}%` }}
+                        />
+                      </div>
+                      <div className="models-page__file-progress-meta">
+                        <span className="models-page__file-progress-desc">
+                          {fp.desc.split('/').pop()}
+                        </span>
+                        <span className="models-page__file-progress-info">
+                          {fp.percent}%
+                          {fp.downloaded && fp.total && ` · ${fp.downloaded} / ${fp.total}`}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="models-page__task-right">
-                  <span
-                    className={`models-page__task-status models-page__task-status--${task.status}`}
-                  >
-                    {taskStatusLabel[task.status] ?? task.status}
-                  </span>
-                  <span className="models-page__task-progress">
-                    {task.progressCurrent} / {task.progressTotal}
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>
