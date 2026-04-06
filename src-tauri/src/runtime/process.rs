@@ -3,7 +3,6 @@ use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::thread;
-use std::time::Duration;
 
 use tauri::{AppHandle, Emitter};
 
@@ -774,7 +773,7 @@ fn taskkill_output_indicates_missing_process(output: &std::process::Output) -> b
 fn terminate_unix_process_group(pid: u32) -> Result<(), String> {
     match send_unix_signal_to_process_group(pid, libc::SIGTERM) {
         Ok(()) => {
-            thread::sleep(Duration::from_millis(300));
+            thread::sleep(std::time::Duration::from_millis(300));
         }
         Err(error) if error.raw_os_error() == Some(libc::ESRCH) => return Ok(()),
         Err(error) => return Err(format!("failed to stop process group {pid}: {error}")),
