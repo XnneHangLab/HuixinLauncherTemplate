@@ -47,6 +47,10 @@ export function pickPythonPath() {
   return invoke<string | null>('pick_python_path_command');
 }
 
+export function launchWebui() {
+  return invoke<string>('launch_webui');
+}
+
 export async function subscribeRuntimeEvents(
   onEvent: (event: RuntimeEvent) => void,
   onRawLog: (line: string) => void,

@@ -28,6 +28,7 @@ pub fn run() {
             runtime::commands::export_console_logs,
             runtime::commands::set_runtime_driver,
             runtime::commands::pick_python_path_command,
+            runtime::commands::launch_webui,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

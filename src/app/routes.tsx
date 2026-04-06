@@ -30,6 +30,7 @@ interface RenderPageOptions {
   onDownloadQwenTts06b: () => void;
   onDownloadQwenTts17b: () => void;
   onOpenPath: (pathKey: string) => void;
+  onLaunchWebui: () => void;
   runtimeDriver: RuntimeDriver;
   runtimeMode: string;
   scriptsReady: boolean;
@@ -59,6 +60,7 @@ export function renderPage(
           folders={options.folders}
           onOpenPath={options.onOpenPath}
           onOpenModels={options.onOpenModels}
+          onLaunchWebui={options.onLaunchWebui}
         />
       );
     case 'settings':

@@ -3,7 +3,7 @@ use tauri::{AppHandle, State};
 use super::process::{
     drain_download_queue, ensure_environment_ready, open_path, pick_python_path,
     pick_workspace_root, resolve_managed_path, run_inspect_command, run_probe_command,
-    write_console_log,
+    spawn_webui_process, write_console_log,
 };
 use super::state::{resolve_repo_root, resolve_workspace_root, RuntimeDriverConfig, RuntimeState};
 
@@ -167,10 +167,27 @@ pub async fn pick_python_path_command() -> Result<Option<String>, String> {
     .await
 }
 
+#[tauri::command]
+pub async fn launch_webui(
+    app: AppHandle,
+    state: State<'_, RuntimeState>,
+) -> Result<String, String> {
+    let repo_root = state.repo_root.clone();
+    let workspace_root = state.current_workspace_root();
+    let driver = state.current_driver_config();
+    run_blocking_runtime_action(move || {
+        ensure_environment_ready(&repo_root, &workspace_root, &driver, &app)?;
+        spawn_webui_process(&repo_root, &workspace_root, &driver, 7860)
+    })
+    .await
+}
+
 fn validate_download_target(target: &str) -> Result<(&'static str, &'static str), String> {
     match target {
         "genie-base" => Ok(("genie-base", "GenieData 基础资源")),
         "gsv-lite" => Ok(("gsv-lite", "GSV-Lite 数据包")),
+        "qwen-tts-0.6b" => Ok(("qwen-tts-0.6b", "Qwen3-TTS 0.6B")),
+        "qwen-tts-1.7b" => Ok(("qwen-tts-1.7b", "Qwen3-TTS 1.7B")),
         other => Err(format!("unsupported download target: {other}")),
     }
 }

@@ -13,6 +13,7 @@ import {
   enqueueDownload,
   exportConsoleLogs,
   inspectRuntime,
+  launchWebui,
   listDownloadTasks,
   openManagedPath,
   pickPythonPath,
@@ -360,6 +361,29 @@ export function AppShell() {
     }
   }
 
+  async function handleLaunchWebui() {
+    if (!isEnvironmentReady(environmentProbe)) {
+      setLogs((current) => [
+        ...current,
+        createConsoleLog('stderr', '环境未就绪，已禁止启动 WebUI'),
+      ]);
+      return;
+    }
+
+    try {
+      const url = await launchWebui();
+      setLogs((current) => [
+        ...current,
+        createConsoleLog('system', `Gradio WebUI 已启动，请访问 ${url}`),
+      ]);
+    } catch (error) {
+      setLogs((current) => [
+        ...current,
+        createConsoleLog('stderr', `启动 WebUI 失败: ${toErrorMessage(error)}`),
+      ]);
+    }
+  }
+
   function handleCopyLog(text: string) {
     void navigator.clipboard?.writeText(text);
   }
@@ -406,6 +430,7 @@ export function AppShell() {
               onDownloadQwenTts06b: handleDownloadQwenTts06b,
               onDownloadQwenTts17b: handleDownloadQwenTts17b,
               onOpenPath: handleOpenManagedPath,
+              onLaunchWebui: handleLaunchWebui,
               runtimeDriver,
               runtimeMode,
               scriptsReady,

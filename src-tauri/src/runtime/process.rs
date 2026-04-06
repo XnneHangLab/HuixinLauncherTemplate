@@ -670,6 +670,26 @@ where
     }
 }
 
+pub fn spawn_webui_process(
+    repo_root: &Path,
+    workspace_root: &Path,
+    driver: &RuntimeDriverConfig,
+    port: u16,
+) -> Result<String, String> {
+    let port_str = port.to_string();
+    let mut command = build_python_command_for_driver(
+        repo_root,
+        workspace_root,
+        driver,
+        ["-m", "xnnehanglab_tts.cli", "webui", "--port", &port_str],
+    );
+    command.stdout(Stdio::null()).stderr(Stdio::null());
+    command
+        .spawn()
+        .map_err(|error| format!("failed to spawn webui process: {error}"))?;
+    Ok(format!("http://127.0.0.1:{port}"))
+}
+
 pub fn pick_python_path() -> Result<Option<PathBuf>, String> {
     #[cfg(target_os = "windows")]
     {
