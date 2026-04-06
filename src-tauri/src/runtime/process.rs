@@ -44,7 +44,8 @@ else:
 print(json.dumps(result, ensure_ascii=False), flush=True)
 "#;
 
-pub fn run_inspect_command(repo_root: &Path, workspace_root: &Path, driver: &RuntimeDriverConfig) -> Result<serde_json::Value, String> {
+pub fn run_inspect_command(repo_root: &Path, workspace_root: &Path, driver: &RuntimeDriverConfig, app: &AppHandle) -> Result<serde_json::Value, String> {
+    emit_raw_log(app, "[inspect] 正在读取运行时信息 …");
     let output = build_python_command_for_driver(
         repo_root,
         workspace_root,
@@ -54,8 +55,11 @@ pub fn run_inspect_command(repo_root: &Path, workspace_root: &Path, driver: &Run
     .output()
     .map_err(|error| format!("failed to run inspect-runtime: {error}"))?;
 
+    emit_stderr_lines(app, &output.stderr);
+
     if !output.status.success() {
-        return Err(String::from_utf8_lossy(&output.stderr).trim().to_string());
+        let msg = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        return Err(msg);
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -68,8 +72,11 @@ pub fn run_inspect_command(repo_root: &Path, workspace_root: &Path, driver: &Run
     Ok(envelope.payload)
 }
 
-pub fn run_probe_command(repo_root: &Path, workspace_root: &Path, driver: &RuntimeDriverConfig) -> Result<EnvironmentProbePayload, String> {
+pub fn run_probe_command(repo_root: &Path, workspace_root: &Path, driver: &RuntimeDriverConfig, app: &AppHandle) -> Result<EnvironmentProbePayload, String> {
+    emit_raw_log(app, "[probe] 开始检测运行环境 …");
+
     if !workspace_root.is_dir() {
+        emit_raw_log(app, &format!("[probe] 工作目录无效: {}", workspace_root.display()));
         return Ok(build_probe_payload(
             repo_root,
             workspace_root,
@@ -100,6 +107,7 @@ pub fn run_probe_command(repo_root: &Path, workspace_root: &Path, driver: &Runti
             let uv_version = match uv_version {
                 Ok(output) => output,
                 Err(error) => {
+                    emit_raw_log(app, &format!("[probe] uv 不可用: {error}"));
                     return Ok(build_probe_payload(
                         repo_root,
                         workspace_root,
@@ -116,6 +124,7 @@ pub fn run_probe_command(repo_root: &Path, workspace_root: &Path, driver: &Runti
 
             if !uv_version.status.success() {
                 let stderr = String::from_utf8_lossy(&uv_version.stderr).trim().to_string();
+                emit_raw_log(app, &format!("[probe] uv 不可用: {stderr}"));
                 return Ok(build_probe_payload(
                     repo_root,
                     workspace_root,
@@ -128,9 +137,16 @@ pub fn run_probe_command(repo_root: &Path, workspace_root: &Path, driver: &Runti
                     "uv 不可用".to_string(),
                 ));
             }
+
+            let uv_ver_str = String::from_utf8_lossy(&uv_version.stdout).trim().to_string();
+            if !uv_ver_str.is_empty() {
+                emit_raw_log(app, &format!("[probe] {uv_ver_str}"));
+            }
         }
         RuntimeDriverConfig::DirectPython { python_path } => {
             if !python_path.is_file() {
+                let msg = format!("python executable not found: {}", python_path.display());
+                emit_raw_log(app, &format!("[probe] {msg}"));
                 return Ok(build_probe_payload(
                     repo_root,
                     workspace_root,
@@ -139,7 +155,7 @@ pub fn run_probe_command(repo_root: &Path, workspace_root: &Path, driver: &Runti
                     false,
                     None,
                     false,
-                    vec![format!("python executable not found: {}", python_path.display())],
+                    vec![msg],
                     "Python 不可用".to_string(),
                 ));
             }
@@ -154,6 +170,8 @@ pub fn run_probe_command(repo_root: &Path, workspace_root: &Path, driver: &Runti
     )
     .output()
     .map_err(|error| format!("failed to run python probe: {error}"))?;
+
+    emit_stderr_lines(app, &python_probe.stderr);
 
     if !python_probe.status.success() {
         let stderr = String::from_utf8_lossy(&python_probe.stderr).trim().to_string();
@@ -170,9 +188,16 @@ pub fn run_probe_command(repo_root: &Path, workspace_root: &Path, driver: &Runti
         ));
     }
 
+    let python_exe = String::from_utf8_lossy(&python_probe.stdout).trim().to_string();
+    if !python_exe.is_empty() {
+        emit_raw_log(app, &format!("[probe] Python: {python_exe}"));
+    }
+
     let output = build_python_command_for_driver(repo_root, workspace_root, driver, ["-c", ENVIRONMENT_PROBE_SCRIPT])
         .output()
         .map_err(|error| format!("failed to run environment probe: {error}"))?;
+
+    emit_stderr_lines(app, &output.stderr);
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
@@ -198,6 +223,14 @@ pub fn run_probe_command(repo_root: &Path, workspace_root: &Path, driver: &Runti
         serde_json::from_str(last_line).map_err(|error| error.to_string())?;
     payload.workspace_root = workspace_root.display().to_string();
     payload.repo_root = repo_root.display().to_string();
+
+    for issue in &payload.issues {
+        if !issue.trim().is_empty() {
+            emit_raw_log(app, &format!("[probe] {issue}"));
+        }
+    }
+    emit_raw_log(app, &format!("[probe] {}", payload.message));
+
     Ok(payload)
 }
 
@@ -205,8 +238,9 @@ pub fn ensure_environment_ready(
     repo_root: &Path,
     workspace_root: &Path,
     driver: &RuntimeDriverConfig,
+    app: &AppHandle,
 ) -> Result<EnvironmentProbePayload, String> {
-    let probe = run_probe_command(repo_root, workspace_root, driver)?;
+    let probe = run_probe_command(repo_root, workspace_root, driver, app)?;
     if matches!(probe.status.as_str(), "torch-cpu-ready" | "torch-gpu-ready") {
         Ok(probe)
     } else {
@@ -531,6 +565,20 @@ fn build_terminal_failure_event(
         progress_total: 3,
         progress_unit: "stage".to_string(),
         timestamp: timestamp.to_string(),
+    }
+}
+
+fn emit_raw_log(app: &AppHandle, line: &str) {
+    let _ = app.emit("runtime:raw-log", line);
+}
+
+fn emit_stderr_lines(app: &AppHandle, stderr: &[u8]) {
+    let text = String::from_utf8_lossy(stderr);
+    for line in text.lines() {
+        let line = line.trim();
+        if !line.is_empty() {
+            let _ = app.emit("runtime:raw-log", line);
+        }
     }
 }
 

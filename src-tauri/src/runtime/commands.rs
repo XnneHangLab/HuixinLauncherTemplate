@@ -8,26 +8,30 @@ use super::process::{
 use super::state::{resolve_repo_root, resolve_workspace_root, RuntimeDriverConfig, RuntimeState};
 
 #[tauri::command]
-pub async fn inspect_runtime(state: State<'_, RuntimeState>) -> Result<serde_json::Value, String> {
-    let repo_root = state.repo_root.clone();
-    let workspace_root = state.current_workspace_root();
-    let driver = state.current_driver_config();
-    run_blocking_runtime_action(move || {
-        ensure_environment_ready(&repo_root, &workspace_root, &driver)?;
-        run_inspect_command(&repo_root, &workspace_root, &driver)
-    })
-    .await
-}
-
-#[tauri::command]
-pub async fn probe_environment(
+pub async fn inspect_runtime(
+    app: AppHandle,
     state: State<'_, RuntimeState>,
 ) -> Result<serde_json::Value, String> {
     let repo_root = state.repo_root.clone();
     let workspace_root = state.current_workspace_root();
     let driver = state.current_driver_config();
     run_blocking_runtime_action(move || {
-        let probe = run_probe_command(&repo_root, &workspace_root, &driver)?;
+        ensure_environment_ready(&repo_root, &workspace_root, &driver, &app)?;
+        run_inspect_command(&repo_root, &workspace_root, &driver, &app)
+    })
+    .await
+}
+
+#[tauri::command]
+pub async fn probe_environment(
+    app: AppHandle,
+    state: State<'_, RuntimeState>,
+) -> Result<serde_json::Value, String> {
+    let repo_root = state.repo_root.clone();
+    let workspace_root = state.current_workspace_root();
+    let driver = state.current_driver_config();
+    run_blocking_runtime_action(move || {
+        let probe = run_probe_command(&repo_root, &workspace_root, &driver, &app)?;
         serde_json::to_value(probe).map_err(|error| error.to_string())
     })
     .await
@@ -35,6 +39,7 @@ pub async fn probe_environment(
 
 #[tauri::command]
 pub async fn choose_workspace_root(
+    app: AppHandle,
     state: State<'_, RuntimeState>,
 ) -> Result<Option<serde_json::Value>, String> {
     let picked = run_blocking_runtime_action(pick_workspace_root).await?;
@@ -42,15 +47,16 @@ pub async fn choose_workspace_root(
         return Ok(None);
     };
 
-    switch_workspace_root(&state, path).await.map(Some)
+    switch_workspace_root(app, &state, path).await.map(Some)
 }
 
 #[tauri::command]
 pub async fn use_repo_workspace_root(
+    app: AppHandle,
     state: State<'_, RuntimeState>,
 ) -> Result<serde_json::Value, String> {
     let repo_root = state.repo_root.clone();
-    switch_workspace_root(&state, repo_root).await
+    switch_workspace_root(app, &state, repo_root).await
 }
 
 #[tauri::command]
@@ -62,8 +68,10 @@ pub async fn enqueue_download(
     let repo_root = state.repo_root.clone();
     let workspace_root = state.current_workspace_root();
     let driver = state.current_driver_config();
+    let app_for_ensure = app.clone();
     run_blocking_runtime_action(move || {
-        ensure_environment_ready(&repo_root, &workspace_root, &driver).map(|_| ())
+        ensure_environment_ready(&repo_root, &workspace_root, &driver, &app_for_ensure)
+            .map(|_| ())
     })
     .await?;
 
@@ -122,6 +130,7 @@ pub fn build_runtime_state() -> Result<RuntimeState, String> {
 
 #[tauri::command]
 pub async fn set_runtime_driver(
+    app: AppHandle,
     state: State<'_, RuntimeState>,
     driver: String,
     python_path: Option<String>,
@@ -143,7 +152,7 @@ pub async fn set_runtime_driver(
     let repo_root = state.repo_root.clone();
     let workspace_root = state.current_workspace_root();
     run_blocking_runtime_action(move || {
-        let probe = run_probe_command(&repo_root, &workspace_root, &driver_config)?;
+        let probe = run_probe_command(&repo_root, &workspace_root, &driver_config, &app)?;
         serde_json::to_value(probe).map_err(|error| error.to_string())
     })
     .await
@@ -177,6 +186,7 @@ where
 }
 
 async fn switch_workspace_root(
+    app: AppHandle,
     state: &RuntimeState,
     next_workspace_root: std::path::PathBuf,
 ) -> Result<serde_json::Value, String> {
@@ -193,7 +203,7 @@ async fn switch_workspace_root(
     let repo_root = state.repo_root.clone();
     let driver = state.current_driver_config();
     run_blocking_runtime_action(move || {
-        let probe = run_probe_command(&repo_root, &next_workspace_root, &driver)?;
+        let probe = run_probe_command(&repo_root, &next_workspace_root, &driver, &app)?;
         serde_json::to_value(probe).map_err(|error| error.to_string())
     })
     .await
