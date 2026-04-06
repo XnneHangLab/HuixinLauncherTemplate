@@ -685,6 +685,7 @@ pub fn spawn_webui_process(
         ["-m", "xnnehanglab_tts.cli", "webui", "--port", &port_str],
     );
     command.stdout(Stdio::piped()).stderr(Stdio::piped());
+    command.env("GRADIO_ANALYTICS_ENABLED", "False");
 
     let mut child = command
         .spawn()
