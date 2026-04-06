@@ -48,7 +48,13 @@ export function pickPythonPath() {
 }
 
 export function launchWebui() {
-  return invoke<string>('launch_webui');
+  return invoke<void>('launch_webui');
+}
+
+export async function subscribeWebuiStatus(onStatus: (status: string) => void) {
+  return listen<string>('webui:status', (event) => {
+    onStatus(event.payload);
+  });
 }
 
 export async function subscribeRuntimeEvents(

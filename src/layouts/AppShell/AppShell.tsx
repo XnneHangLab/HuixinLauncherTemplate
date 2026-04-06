@@ -20,6 +20,7 @@ import {
   probeEnvironment,
   setRuntimeDriver as setRuntimeDriverApi,
   subscribeRuntimeEvents,
+  subscribeWebuiStatus,
   useRepoWorkspaceRoot,
 } from '../../services/runtime/bridge';
 import {
@@ -59,6 +60,7 @@ export function AppShell() {
   const [wrapLines, setWrapLines] = useState(true);
   const [runtimeDriver, setRuntimeDriver] = useState<RuntimeDriver>('uv');
   const [pythonExePath, setPythonExePath] = useState('');
+  const [webuiRunning, setWebuiRunning] = useState(false);
 
   useEffect(() => {
     writeStoredTheme(theme);
@@ -142,9 +144,29 @@ export function AppShell() {
         ]);
       });
 
+    let unsubscribeWebui = () => {};
+    void subscribeWebuiStatus((status) => {
+      if (status === 'stopped') {
+        setWebuiRunning(false);
+        setLogs((current) => [
+          ...current,
+          createConsoleLog('system', 'Gradio WebUI 进程已退出'),
+        ]);
+      }
+    })
+      .then((cleanup) => {
+        if (disposed) {
+          cleanup();
+          return;
+        }
+        unsubscribeWebui = cleanup;
+      })
+      .catch(() => {});
+
     return () => {
       disposed = true;
       unsubscribe();
+      unsubscribeWebui();
     };
   }, []);
 
@@ -370,13 +392,12 @@ export function AppShell() {
       return;
     }
 
+    setActivePage('console');
+    setWebuiRunning(true);
     try {
-      const url = await launchWebui();
-      setLogs((current) => [
-        ...current,
-        createConsoleLog('system', `Gradio WebUI 已启动，请访问 ${url}`),
-      ]);
+      await launchWebui();
     } catch (error) {
+      setWebuiRunning(false);
       setLogs((current) => [
         ...current,
         createConsoleLog('stderr', `启动 WebUI 失败: ${toErrorMessage(error)}`),
@@ -431,6 +452,7 @@ export function AppShell() {
               onDownloadQwenTts17b: handleDownloadQwenTts17b,
               onOpenPath: handleOpenManagedPath,
               onLaunchWebui: handleLaunchWebui,
+              webuiRunning,
               runtimeDriver,
               runtimeMode,
               scriptsReady,

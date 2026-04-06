@@ -671,11 +671,12 @@ where
 }
 
 pub fn spawn_webui_process(
+    app: AppHandle,
     repo_root: &Path,
     workspace_root: &Path,
     driver: &RuntimeDriverConfig,
     port: u16,
-) -> Result<String, String> {
+) -> Result<(), String> {
     let port_str = port.to_string();
     let mut command = build_python_command_for_driver(
         repo_root,
@@ -683,11 +684,41 @@ pub fn spawn_webui_process(
         driver,
         ["-m", "xnnehanglab_tts.cli", "webui", "--port", &port_str],
     );
-    command.stdout(Stdio::null()).stderr(Stdio::null());
-    command
+    command.stdout(Stdio::piped()).stderr(Stdio::piped());
+
+    let mut child = command
         .spawn()
         .map_err(|error| format!("failed to spawn webui process: {error}"))?;
-    Ok(format!("http://127.0.0.1:{port}"))
+
+    let stdout = child
+        .stdout
+        .take()
+        .ok_or_else(|| "missing child stdout".to_string())?;
+    let stderr = child
+        .stderr
+        .take()
+        .ok_or_else(|| "missing child stderr".to_string())?;
+
+    let app_stdout = app.clone();
+    thread::spawn(move || {
+        for line in BufReader::new(stdout).lines().flatten() {
+            if !line.trim().is_empty() {
+                let _ = app_stdout.emit("runtime:raw-log", &line);
+            }
+        }
+    });
+
+    thread::spawn(move || {
+        for line in BufReader::new(stderr).lines().flatten() {
+            if !line.trim().is_empty() {
+                let _ = app.emit("runtime:raw-log", &line);
+            }
+        }
+        let _ = child.wait();
+        let _ = app.emit("webui:status", "stopped");
+    });
+
+    Ok(())
 }
 
 pub fn pick_python_path() -> Result<Option<PathBuf>, String> {

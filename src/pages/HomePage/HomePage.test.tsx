@@ -22,6 +22,7 @@ describe('HomePage', () => {
         onOpenPath={() => undefined}
         onOpenModels={() => undefined}
         onLaunchWebui={() => undefined}
+        webuiRunning={false}
       />,
     );
 
@@ -61,6 +62,7 @@ describe('HomePage', () => {
         onOpenPath={onOpenPath}
         onOpenModels={onOpenModels}
         onLaunchWebui={onLaunchWebui}
+        webuiRunning={false}
       />,
     );
 
@@ -69,5 +71,19 @@ describe('HomePage', () => {
 
     await user.click(screen.getByRole('button', { name: '一键启动' }));
     expect(onLaunchWebui).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows running state when webui is running', () => {
+    render(
+      <HomePage
+        folders={folders}
+        onOpenPath={() => undefined}
+        onOpenModels={() => undefined}
+        onLaunchWebui={() => undefined}
+        webuiRunning={true}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: '运行中…' })).toBeDisabled();
   });
 });

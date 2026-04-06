@@ -171,13 +171,13 @@ pub async fn pick_python_path_command() -> Result<Option<String>, String> {
 pub async fn launch_webui(
     app: AppHandle,
     state: State<'_, RuntimeState>,
-) -> Result<String, String> {
+) -> Result<(), String> {
     let repo_root = state.repo_root.clone();
     let workspace_root = state.current_workspace_root();
     let driver = state.current_driver_config();
     run_blocking_runtime_action(move || {
         ensure_environment_ready(&repo_root, &workspace_root, &driver, &app)?;
-        spawn_webui_process(&repo_root, &workspace_root, &driver, 7860)
+        spawn_webui_process(app, &repo_root, &workspace_root, &driver, 7860)
     })
     .await
 }
