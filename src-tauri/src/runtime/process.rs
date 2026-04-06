@@ -622,7 +622,8 @@ where
         .env("XH_VOICE_WORKSPACE_ROOT", workspace_root)
         .env("XH_RUNTIME_CONFIG", repo_root.join("config").join("runtime.toml"))
         .env("PYTHONUTF8", "1")
-        .env("PYTHONIOENCODING", "utf-8");
+        .env("PYTHONIOENCODING", "utf-8")
+        .env("PYTHONUNBUFFERED", "1");
     for arg in python_args {
         command.arg(arg.as_ref());
     }
@@ -645,7 +646,8 @@ where
         .env("XH_VOICE_WORKSPACE_ROOT", workspace_root)
         .env("XH_RUNTIME_CONFIG", repo_root.join("config").join("runtime.toml"))
         .env("PYTHONUTF8", "1")
-        .env("PYTHONIOENCODING", "utf-8");
+        .env("PYTHONIOENCODING", "utf-8")
+        .env("PYTHONUNBUFFERED", "1");
     for arg in python_args {
         command.arg(arg.as_ref());
     }
@@ -890,6 +892,9 @@ mod tests {
         assert!(envs.iter().any(|(key, value)| {
             key == "XH_VOICE_WORKSPACE_ROOT"
                 && value.as_deref() == Some("/tmp/workspace")
+        }));
+        assert!(envs.iter().any(|(key, value)| {
+            key == "PYTHONUNBUFFERED" && value.as_deref() == Some("1")
         }));
     }
 
