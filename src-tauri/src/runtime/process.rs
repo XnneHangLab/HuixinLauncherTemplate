@@ -3,6 +3,7 @@ use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::thread;
+use std::time::Duration;
 
 use tauri::{AppHandle, Emitter};
 
@@ -43,6 +44,23 @@ else:
 
 print(json.dumps(result, ensure_ascii=False), flush=True)
 "#;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ProcessPlatform {
+    Windows,
+    Unix,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum WebuiCleanupPlan {
+    Command {
+        program: &'static str,
+        args: Vec<String>,
+    },
+    UnixProcessGroup {
+        pid: u32,
+    },
+}
 
 pub fn run_inspect_command(repo_root: &Path, workspace_root: &Path, driver: &RuntimeDriverConfig, app: &AppHandle) -> Result<serde_json::Value, String> {
     emit_raw_log(app, "[inspect] 正在读取运行时信息 …");
@@ -353,6 +371,7 @@ pub fn drain_download_queue(app: AppHandle, state: RuntimeState) {
                 workspace_root: state.workspace_root.clone(),
                 queue: state.queue.clone(),
                 driver_config: state.driver_config.clone(),
+                webui: state.webui.clone(),
             },
             task.task_id.clone(),
             task.target.clone(),
@@ -672,8 +691,143 @@ where
     }
 }
 
+fn current_process_platform() -> ProcessPlatform {
+    if cfg!(windows) {
+        ProcessPlatform::Windows
+    } else {
+        ProcessPlatform::Unix
+    }
+}
+
+fn build_webui_cleanup_plan(pid: u32, platform: ProcessPlatform) -> WebuiCleanupPlan {
+    match platform {
+        ProcessPlatform::Windows => WebuiCleanupPlan::Command {
+            program: "taskkill",
+            args: vec![
+                "/PID".to_string(),
+                pid.to_string(),
+                "/T".to_string(),
+                "/F".to_string(),
+            ],
+        },
+        ProcessPlatform::Unix => WebuiCleanupPlan::UnixProcessGroup { pid },
+    }
+}
+
+#[cfg(unix)]
+fn configure_webui_command_for_process_tree(command: &mut Command) {
+    use std::os::unix::process::CommandExt;
+
+    unsafe {
+        command.pre_exec(|| {
+            if libc::setpgid(0, 0) != 0 {
+                return Err(std::io::Error::last_os_error());
+            }
+            Ok(())
+        });
+    }
+}
+
+#[cfg(not(unix))]
+fn configure_webui_command_for_process_tree(_command: &mut Command) {}
+
+fn execute_webui_cleanup_plan(plan: WebuiCleanupPlan) -> Result<(), String> {
+    match plan {
+        WebuiCleanupPlan::Command { program, args } => execute_command_cleanup(program, &args),
+        WebuiCleanupPlan::UnixProcessGroup { pid } => terminate_unix_process_group(pid),
+    }
+}
+
+#[cfg(windows)]
+fn execute_command_cleanup(program: &str, args: &[String]) -> Result<(), String> {
+    let output = Command::new(program)
+        .args(args)
+        .output()
+        .map_err(|error| format!("failed to execute {program}: {error}"))?;
+    if output.status.success() || taskkill_output_indicates_missing_process(&output) {
+        return Ok(());
+    }
+
+    let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+    let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    let detail = if !stderr.is_empty() { stderr } else { stdout };
+    Err(format!("{program} failed: {detail}"))
+}
+
+#[cfg(not(windows))]
+fn execute_command_cleanup(_program: &str, _args: &[String]) -> Result<(), String> {
+    Err("windows cleanup plan executed on non-windows target".to_string())
+}
+
+#[cfg(windows)]
+fn taskkill_output_indicates_missing_process(output: &std::process::Output) -> bool {
+    let combined = format!(
+        "{} {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    )
+    .to_lowercase();
+    combined.contains("not found") || combined.contains("no running instance")
+}
+
+#[cfg(unix)]
+fn terminate_unix_process_group(pid: u32) -> Result<(), String> {
+    match send_unix_signal_to_process_group(pid, libc::SIGTERM) {
+        Ok(()) => {
+            thread::sleep(Duration::from_millis(300));
+        }
+        Err(error) if error.raw_os_error() == Some(libc::ESRCH) => return Ok(()),
+        Err(error) => return Err(format!("failed to stop process group {pid}: {error}")),
+    }
+
+    match send_unix_signal_to_process_group(pid, libc::SIGKILL) {
+        Ok(()) => Ok(()),
+        Err(error) if error.raw_os_error() == Some(libc::ESRCH) => Ok(()),
+        Err(error) => Err(format!("failed to kill process group {pid}: {error}")),
+    }
+}
+
+#[cfg(not(unix))]
+fn terminate_unix_process_group(_pid: u32) -> Result<(), String> {
+    Err("unix cleanup plan executed on non-unix target".to_string())
+}
+
+#[cfg(unix)]
+fn send_unix_signal_to_process_group(pid: u32, signal: libc::c_int) -> std::io::Result<()> {
+    let result = unsafe { libc::killpg(pid as libc::pid_t, signal) };
+    if result == 0 {
+        Ok(())
+    } else {
+        Err(std::io::Error::last_os_error())
+    }
+}
+
+fn terminate_webui_process_tree(pid: u32) -> Result<(), String> {
+    let plan = build_webui_cleanup_plan(pid, current_process_platform());
+    execute_webui_cleanup_plan(plan)
+}
+
+pub fn cleanup_webui_processes(app: &AppHandle, state: &RuntimeState) -> Result<bool, String> {
+    let Some(record) = state.take_webui_process() else {
+        return Ok(false);
+    };
+
+    emit_raw_log(
+        app,
+        &format!("[webui] 正在停止 WebUI 进程 (pid {}) …", record.pid),
+    );
+    terminate_webui_process_tree(record.pid)?;
+    emit_raw_log(
+        app,
+        &format!("[webui] WebUI 进程已停止 (pid {})", record.pid),
+    );
+    let _ = app.emit("webui:status", "stopped");
+    Ok(true)
+}
+
 pub fn spawn_webui_process(
     app: AppHandle,
+    state: RuntimeState,
     repo_root: &Path,
     workspace_root: &Path,
     driver: &RuntimeDriverConfig,
@@ -686,6 +840,7 @@ pub fn spawn_webui_process(
         driver,
         ["-m", "xnnehanglab_tts.cli", "webui", "--port", &port_str],
     );
+    configure_webui_command_for_process_tree(&mut command);
     command.stdout(Stdio::piped()).stderr(Stdio::piped());
     command.env("GRADIO_ANALYTICS_ENABLED", "False");
     // Ensure localhost is excluded from any system proxy so Gradio's post-launch
@@ -705,6 +860,7 @@ pub fn spawn_webui_process(
     let mut child = command
         .spawn()
         .map_err(|error| format!("failed to spawn webui process: {error}"))?;
+    let record = state.register_webui_process(child.id());
 
     let stdout = child
         .stdout
@@ -731,7 +887,9 @@ pub fn spawn_webui_process(
             }
         }
         let _ = child.wait();
-        let _ = app.emit("webui:status", "stopped");
+        if state.clear_webui_process_if_matches(record.launch_id) {
+            let _ = app.emit("webui:status", "stopped");
+        }
     });
 
     Ok(())
@@ -865,8 +1023,9 @@ mod tests {
     use serde_json::json;
 
     use super::{
-        build_terminal_failure_event, build_uv_python_command, managed_path_from_payload,
-        runtime_event_from_python_payload, EnvironmentProbePayload,
+        build_terminal_failure_event, build_uv_python_command, build_webui_cleanup_plan,
+        managed_path_from_payload, runtime_event_from_python_payload, EnvironmentProbePayload,
+        ProcessPlatform, WebuiCleanupPlan,
     };
 
     #[test]
@@ -1007,5 +1166,30 @@ mod tests {
         assert_eq!(event.percent, Some(42));
         assert_eq!(event.downloaded.as_deref(), Some("75.0M"));
         assert_eq!(event.total.as_deref(), Some("180M"));
+    }
+
+    #[test]
+    fn webui_cleanup_plan_uses_taskkill_on_windows() {
+        let plan = build_webui_cleanup_plan(4242, ProcessPlatform::Windows);
+
+        assert_eq!(
+            plan,
+            WebuiCleanupPlan::Command {
+                program: "taskkill",
+                args: vec![
+                    "/PID".to_string(),
+                    "4242".to_string(),
+                    "/T".to_string(),
+                    "/F".to_string(),
+                ],
+            }
+        );
+    }
+
+    #[test]
+    fn webui_cleanup_plan_uses_process_group_on_unix() {
+        let plan = build_webui_cleanup_plan(4242, ProcessPlatform::Unix);
+
+        assert_eq!(plan, WebuiCleanupPlan::UnixProcessGroup { pid: 4242 });
     }
 }
