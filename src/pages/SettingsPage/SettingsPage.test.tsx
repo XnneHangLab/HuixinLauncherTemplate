@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import { SettingsPage } from './SettingsPage';
@@ -120,8 +120,16 @@ describe('SettingsPage', () => {
 
     expect(screen.queryByLabelText('Python 可执行文件路径')).not.toBeInTheDocument();
 
+    const driverRow = screen.getByText('Python 运行方式').closest('.setting-row');
+    expect(driverRow).not.toBeNull();
+    expect(within(driverRow as HTMLElement).getByText('🐍')).toBeInTheDocument();
+
     await user.click(screen.getByRole('button', { name: 'conda' }));
 
     expect(screen.getByLabelText('Python 可执行文件路径')).toBeInTheDocument();
+
+    const pythonExeRow = screen.getByText('Python 可执行文件').closest('.setting-row');
+    expect(pythonExeRow).not.toBeNull();
+    expect(within(pythonExeRow as HTMLElement).getByText('🐍')).toBeInTheDocument();
   });
 });

@@ -136,6 +136,7 @@ export function SettingsPage({
               <SettingRow
                 name="Python 运行方式"
                 description="uv 为推荐方式；conda 可指定自有环境"
+                icon="🐍"
               >
                 <div className="driver-select-wrap">
                   <button
@@ -159,6 +160,7 @@ export function SettingsPage({
                 <SettingRow
                   name="Python 可执行文件"
                   description="指定 conda 环境中的 python 或 python.exe 路径"
+                  icon="🐍"
                 >
                   <div className="workspace-actions">
                     <input
