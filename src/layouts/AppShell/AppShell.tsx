@@ -70,6 +70,25 @@ export function AppShell() {
     let disposed = false;
     let unsubscribe = () => {};
 
+    async function refreshInspectionSnapshot() {
+      try {
+        const nextInspection = await inspectRuntime();
+        if (disposed) {
+          return;
+        }
+        setInspection(nextInspection);
+        setFolders(buildManagedFolderItems(nextInspection));
+      } catch (error) {
+        if (disposed) {
+          return;
+        }
+        setLogs((current) => [
+          ...current,
+          createConsoleLog('stderr', `刷新资源状态失败: ${toErrorMessage(error)}`),
+        ]);
+      }
+    }
+
     void (async () => {
       try {
         const [nextProbe, nextTasks] = await Promise.all([
@@ -88,12 +107,7 @@ export function AppShell() {
           return;
         }
 
-        const nextInspection = await inspectRuntime();
-        if (disposed) {
-          return;
-        }
-        setInspection(nextInspection);
-        setFolders(buildManagedFolderItems(nextInspection));
+        await refreshInspectionSnapshot();
       } catch (error) {
         if (disposed) {
           return;
@@ -119,6 +133,7 @@ export function AppShell() {
         }
         if (event.event === 'download.completed' || event.event === 'download.failed') {
           setFileProgress(null);
+          void refreshInspectionSnapshot();
         }
         setTasks((current) => applyRuntimeEvent(current, event));
         setLogs((current) => [...current, createConsoleLogFromRuntimeEvent(event)]);
