@@ -39,6 +39,14 @@ export function exportConsoleLogs(contents: string) {
   return invoke<string>('export_console_logs', { contents });
 }
 
+export function setRuntimeDriver(driver: string, pythonPath: string | null) {
+  return invoke<EnvironmentProbe>('set_runtime_driver', { driver, pythonPath });
+}
+
+export function pickPythonPath() {
+  return invoke<string | null>('pick_python_path_command');
+}
+
 export async function subscribeRuntimeEvents(
   onEvent: (event: RuntimeEvent) => void,
   onRawLog: (line: string) => void,

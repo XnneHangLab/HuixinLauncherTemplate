@@ -15,7 +15,9 @@ import {
   inspectRuntime,
   listDownloadTasks,
   openManagedPath,
+  pickPythonPath,
   probeEnvironment,
+  setRuntimeDriver as setRuntimeDriverApi,
   subscribeRuntimeEvents,
   useRepoWorkspaceRoot,
 } from '../../services/runtime/bridge';
@@ -27,6 +29,7 @@ import {
   isEnvironmentReady,
   type EnvironmentProbe,
   type ManagedFolderItem,
+  type RuntimeDriver,
   type RuntimeInspection,
   type RuntimeTaskRecord,
 } from '../../services/runtime/runtime';
@@ -51,6 +54,8 @@ export function AppShell() {
   const [logs, setLogs] = useState<ConsoleLogEntry[]>([]);
   const [autoScroll, setAutoScroll] = useState(true);
   const [wrapLines, setWrapLines] = useState(true);
+  const [runtimeDriver, setRuntimeDriver] = useState<RuntimeDriver>('uv');
+  const [pythonExePath, setPythonExePath] = useState('');
 
   useEffect(() => {
     writeStoredTheme(theme);
@@ -238,6 +243,34 @@ export function AppShell() {
     }
   }
 
+  async function handleChoosePythonExe(): Promise<string | null> {
+    try {
+      return await pickPythonPath();
+    } catch (error) {
+      setLogs((current) => [
+        ...current,
+        createConsoleLog('stderr', `选择 Python 路径失败: ${toErrorMessage(error)}`),
+      ]);
+      return null;
+    }
+  }
+
+  async function handleSaveSettings(driver: RuntimeDriver, exePath: string) {
+    try {
+      const nextProbe = await setRuntimeDriverApi(driver, exePath || null);
+      setRuntimeDriver(driver);
+      setPythonExePath(exePath);
+      if (nextProbe) {
+        await handleWorkspaceProbe(nextProbe);
+      }
+    } catch (error) {
+      setLogs((current) => [
+        ...current,
+        createConsoleLog('stderr', `保存设置失败: ${toErrorMessage(error)}`),
+      ]);
+    }
+  }
+
   async function handleExportLogs() {
     try {
       const output = formatConsoleExport(logs);
@@ -297,7 +330,7 @@ export function AppShell() {
               onDownloadGenieBase: handleDownloadGenieBase,
               onDownloadGsvLite: handleDownloadGsvLite,
               onOpenPath: handleOpenManagedPath,
-              runtimeDriver: inspection?.runtimeDriver ?? 'uv',
+              runtimeDriver,
               runtimeMode,
               scriptsReady,
               workspaceLocked,
@@ -306,7 +339,9 @@ export function AppShell() {
               environmentProbe,
               onChooseWorkspaceRoot: handleChooseWorkspaceRoot,
               onUseRepoWorkspaceRoot: handleUseRepoWorkspaceRoot,
-              pythonPath: inspection?.pythonPath ?? '',
+              pythonExePath,
+              onChoosePythonExe: handleChoosePythonExe,
+              onSave: handleSaveSettings,
               onSetAutoScroll: setAutoScroll,
               onSetWrapLines: setWrapLines,
               onClearLogs: handleClearLogs,

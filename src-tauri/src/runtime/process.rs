@@ -7,7 +7,7 @@ use std::thread;
 use tauri::{AppHandle, Emitter};
 
 use super::models::{EnvironmentProbePayload, PythonEnvelope, RuntimeEventPayload, TaskStatus};
-use super::state::RuntimeState;
+use super::state::{RuntimeDriverConfig, RuntimeState};
 
 const ENVIRONMENT_PROBE_SCRIPT: &str = r#"
 import importlib
@@ -44,10 +44,11 @@ else:
 print(json.dumps(result, ensure_ascii=False), flush=True)
 "#;
 
-pub fn run_inspect_command(repo_root: &Path, workspace_root: &Path) -> Result<serde_json::Value, String> {
-    let output = build_uv_python_command(
+pub fn run_inspect_command(repo_root: &Path, workspace_root: &Path, driver: &RuntimeDriverConfig) -> Result<serde_json::Value, String> {
+    let output = build_python_command_for_driver(
         repo_root,
         workspace_root,
+        driver,
         ["-m", "xnnehanglab_tts.cli", "inspect-runtime"],
     )
     .output()
@@ -67,7 +68,7 @@ pub fn run_inspect_command(repo_root: &Path, workspace_root: &Path) -> Result<se
     Ok(envelope.payload)
 }
 
-pub fn run_probe_command(repo_root: &Path, workspace_root: &Path) -> Result<EnvironmentProbePayload, String> {
+pub fn run_probe_command(repo_root: &Path, workspace_root: &Path, driver: &RuntimeDriverConfig) -> Result<EnvironmentProbePayload, String> {
     if !workspace_root.is_dir() {
         return Ok(build_probe_payload(
             repo_root,
@@ -82,53 +83,73 @@ pub fn run_probe_command(repo_root: &Path, workspace_root: &Path) -> Result<Envi
         ));
     }
 
-    let uv_version = Command::new("uv")
-        .arg("--version")
-        .current_dir(repo_root)
-        .output()
-        .map_err(|error| {
-            if error.kind() == std::io::ErrorKind::NotFound {
-                format!("uv not available: {error}")
-            } else {
-                format!("failed to run uv --version: {error}")
+    match driver {
+        RuntimeDriverConfig::Uv => {
+            let uv_version = Command::new("uv")
+                .arg("--version")
+                .current_dir(repo_root)
+                .output()
+                .map_err(|error| {
+                    if error.kind() == std::io::ErrorKind::NotFound {
+                        format!("uv not available: {error}")
+                    } else {
+                        format!("failed to run uv --version: {error}")
+                    }
+                });
+
+            let uv_version = match uv_version {
+                Ok(output) => output,
+                Err(error) => {
+                    return Ok(build_probe_payload(
+                        repo_root,
+                        workspace_root,
+                        "uv-unavailable",
+                        None,
+                        false,
+                        None,
+                        false,
+                        vec![error.clone()],
+                        "uv 不可用".to_string(),
+                    ));
+                }
+            };
+
+            if !uv_version.status.success() {
+                let stderr = String::from_utf8_lossy(&uv_version.stderr).trim().to_string();
+                return Ok(build_probe_payload(
+                    repo_root,
+                    workspace_root,
+                    "uv-unavailable",
+                    None,
+                    false,
+                    None,
+                    false,
+                    vec![stderr.clone()],
+                    "uv 不可用".to_string(),
+                ));
             }
-        });
-
-    let uv_version = match uv_version {
-        Ok(output) => output,
-        Err(error) => {
-            return Ok(build_probe_payload(
-                repo_root,
-                workspace_root,
-                "uv-unavailable",
-                None,
-                false,
-                None,
-                false,
-                vec![error.clone()],
-                "uv 不可用".to_string(),
-            ));
         }
-    };
-
-    if !uv_version.status.success() {
-        let stderr = String::from_utf8_lossy(&uv_version.stderr).trim().to_string();
-        return Ok(build_probe_payload(
-            repo_root,
-            workspace_root,
-            "uv-unavailable",
-            None,
-            false,
-            None,
-            false,
-            vec![stderr.clone()],
-            "uv 不可用".to_string(),
-        ));
+        RuntimeDriverConfig::DirectPython { python_path } => {
+            if !python_path.is_file() {
+                return Ok(build_probe_payload(
+                    repo_root,
+                    workspace_root,
+                    "python-unavailable",
+                    None,
+                    false,
+                    None,
+                    false,
+                    vec![format!("python executable not found: {}", python_path.display())],
+                    "Python 不可用".to_string(),
+                ));
+            }
+        }
     }
 
-    let python_probe = build_uv_python_command(
+    let python_probe = build_python_command_for_driver(
         repo_root,
         workspace_root,
+        driver,
         ["-c", "import sys; print(sys.executable)"],
     )
     .output()
@@ -149,7 +170,7 @@ pub fn run_probe_command(repo_root: &Path, workspace_root: &Path) -> Result<Envi
         ));
     }
 
-    let output = build_uv_python_command(repo_root, workspace_root, ["-c", ENVIRONMENT_PROBE_SCRIPT])
+    let output = build_python_command_for_driver(repo_root, workspace_root, driver, ["-c", ENVIRONMENT_PROBE_SCRIPT])
         .output()
         .map_err(|error| format!("failed to run environment probe: {error}"))?;
 
@@ -183,8 +204,9 @@ pub fn run_probe_command(repo_root: &Path, workspace_root: &Path) -> Result<Envi
 pub fn ensure_environment_ready(
     repo_root: &Path,
     workspace_root: &Path,
+    driver: &RuntimeDriverConfig,
 ) -> Result<EnvironmentProbePayload, String> {
-    let probe = run_probe_command(repo_root, workspace_root)?;
+    let probe = run_probe_command(repo_root, workspace_root, driver)?;
     if matches!(probe.status.as_str(), "torch-cpu-ready" | "torch-gpu-ready") {
         Ok(probe)
     } else {
@@ -198,9 +220,11 @@ pub fn run_download_command(
     task_id: String,
     target: String,
 ) -> Result<(), String> {
-    let mut command = build_uv_python_command(
+    let driver = state.current_driver_config();
+    let mut command = build_python_command_for_driver(
         &state.repo_root,
         &state.current_workspace_root(),
+        &driver,
         ["-m", "xnnehanglab_tts.cli", "download"],
     );
     command.arg(&target).stdout(Stdio::piped()).stderr(Stdio::piped());
@@ -305,6 +329,7 @@ pub fn drain_download_queue(app: AppHandle, state: RuntimeState) {
                 repo_root: state.repo_root.clone(),
                 workspace_root: state.workspace_root.clone(),
                 queue: state.queue.clone(),
+                driver_config: state.driver_config.clone(),
             },
             task.task_id.clone(),
             task.target.clone(),
@@ -532,6 +557,131 @@ where
         command.arg(arg.as_ref());
     }
     command
+}
+
+pub fn build_direct_python_command<I, S>(
+    repo_root: &Path,
+    workspace_root: &Path,
+    python_path: &Path,
+    python_args: I,
+) -> Command
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>,
+{
+    let mut command = Command::new(python_path);
+    command
+        .current_dir(repo_root)
+        .env("XH_VOICE_WORKSPACE_ROOT", workspace_root)
+        .env("XH_RUNTIME_CONFIG", repo_root.join("config").join("runtime.toml"))
+        .env("PYTHONUTF8", "1")
+        .env("PYTHONIOENCODING", "utf-8");
+    for arg in python_args {
+        command.arg(arg.as_ref());
+    }
+    command
+}
+
+pub fn build_python_command_for_driver<I, S>(
+    repo_root: &Path,
+    workspace_root: &Path,
+    driver: &RuntimeDriverConfig,
+    python_args: I,
+) -> Command
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>,
+{
+    match driver {
+        RuntimeDriverConfig::Uv => build_uv_python_command(repo_root, workspace_root, python_args),
+        RuntimeDriverConfig::DirectPython { python_path } => {
+            build_direct_python_command(repo_root, workspace_root, python_path, python_args)
+        }
+    }
+}
+
+pub fn pick_python_path() -> Result<Option<PathBuf>, String> {
+    #[cfg(target_os = "windows")]
+    {
+        let output = Command::new("powershell")
+            .args([
+                "-NoProfile",
+                "-Command",
+                "Add-Type -AssemblyName System.Windows.Forms; $dialog = New-Object System.Windows.Forms.OpenFileDialog; $dialog.Title = '选择 Python 可执行文件'; $dialog.Filter = 'Python 可执行文件 (python*.exe)|python*.exe|所有文件 (*.*)|*.*'; if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Write-Output $dialog.FileName }",
+            ])
+            .output()
+            .map_err(|error| format!("failed to open python path picker: {error}"))?;
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+            return Err(if stderr.is_empty() {
+                "failed to open python path picker".to_string()
+            } else {
+                stderr
+            });
+        }
+        let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        return if stdout.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(PathBuf::from(stdout)))
+        };
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        let output = Command::new("osascript")
+            .args([
+                "-e",
+                "POSIX path of (choose file with prompt \"选择 Python 可执行文件\")",
+            ])
+            .output()
+            .map_err(|error| format!("failed to open python path picker: {error}"))?;
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+            return Err(if stderr.is_empty() {
+                "failed to open python path picker".to_string()
+            } else {
+                stderr
+            });
+        }
+        let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        let path = stdout.trim_end_matches('\n');
+        return if path.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(PathBuf::from(path)))
+        };
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        for (program, args) in [
+            (
+                "zenity",
+                vec![
+                    "--file-selection",
+                    "--title=选择 Python 可执行文件",
+                ],
+            ),
+            ("kdialog", vec!["--getopenfilename", "."]),
+        ] {
+            let output = Command::new(program).args(args).output();
+            let Ok(output) = output else {
+                continue;
+            };
+            if !output.status.success() {
+                continue;
+            }
+            let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            return if stdout.is_empty() {
+                Ok(None)
+            } else {
+                Ok(Some(PathBuf::from(stdout)))
+            };
+        }
+
+        Err("failed to open python path picker: no supported dialog program found".to_string())
+    }
 }
 
 fn build_probe_payload(

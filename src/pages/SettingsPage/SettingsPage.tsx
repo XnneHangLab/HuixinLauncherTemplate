@@ -2,17 +2,14 @@ import { useState } from 'react';
 import { SettingCard } from '../../components/settings/SettingCard/SettingCard';
 import { SettingRow } from '../../components/settings/SettingRow/SettingRow';
 import { SettingsTabs } from '../../components/settings/SettingsTabs/SettingsTabs';
-import { ToggleSwitch } from '../../components/settings/ToggleSwitch/ToggleSwitch';
 import {
   aboutInfo,
-  mirrorSettings,
-  preferenceSettings,
-  proxyDefaults,
   settingsTabs,
   type SettingsTabId,
 } from '../../data/settings';
 import type {
   EnvironmentProbe,
+  RuntimeDriver,
 } from '../../services/runtime/runtime';
 import '../../styles/settings.css';
 
@@ -22,7 +19,10 @@ interface SettingsPageProps {
   environmentProbe: EnvironmentProbe | null;
   onChooseWorkspaceRoot: () => void;
   onUseRepoWorkspaceRoot: () => void;
-  pythonPath: string;
+  runtimeDriver: RuntimeDriver;
+  pythonExePath: string;
+  onChoosePythonExe: () => Promise<string | null>;
+  onSave: (driver: RuntimeDriver, pythonExePath: string) => void;
 }
 
 export function SettingsPage({
@@ -31,26 +31,14 @@ export function SettingsPage({
   environmentProbe,
   onChooseWorkspaceRoot,
   onUseRepoWorkspaceRoot,
-  pythonPath,
+  runtimeDriver,
+  pythonExePath,
+  onChoosePythonExe,
+  onSave,
 }: SettingsPageProps) {
   const [activeTab, setActiveTab] = useState<SettingsTabId>('general');
-  const [proxyAddress, setProxyAddress] = useState(proxyDefaults.address);
-  const [proxyToggles, setProxyToggles] = useState({
-    git: proxyDefaults.git,
-    pip: proxyDefaults.pip,
-    env: proxyDefaults.env,
-    modelDownload: proxyDefaults.modelDownload,
-  });
-  const [mirrorToggles, setMirrorToggles] = useState(
-    Object.fromEntries(
-      mirrorSettings.map((item) => [item.id, item.defaultValue]),
-    ) as Record<string, boolean>,
-  );
-  const [preferenceToggles, setPreferenceToggles] = useState(
-    Object.fromEntries(
-      preferenceSettings.map((item) => [item.id, item.defaultValue]),
-    ) as Record<string, boolean>,
-  );
+  const [localDriver, setLocalDriver] = useState<RuntimeDriver>(runtimeDriver);
+  const [localPythonExePath, setLocalPythonExePath] = useState(pythonExePath);
 
   const environmentLabel = environmentProbe
     ? formatEnvironmentStatus(environmentProbe.status)
@@ -60,9 +48,15 @@ export function SettingsPage({
     environmentProbe?.status === 'torch-cpu-ready' ||
     environmentProbe?.status === 'torch-gpu-ready';
 
-  const driverLabel = environmentProbe?.status === 'uv-unavailable'
-    ? 'uv 不可用'
-    : 'uv';
+  const driverDisplayLabel =
+    localDriver === 'conda' ? 'conda / 直接 Python' : 'uv';
+
+  async function handleBrowsePythonExe() {
+    const picked = await onChoosePythonExe();
+    if (picked) {
+      setLocalPythonExePath(picked);
+    }
+  }
 
   return (
     <div className="settings-shell">
@@ -79,15 +73,36 @@ export function SettingsPage({
             role="tabpanel"
             aria-labelledby="settings-tab-general"
           >
-            <div className="group-title group-title--standalone">工作目录</div>
+            <div className="group-title group-title--standalone">运行环境</div>
+
+            <div className="env-info-card">
+              <div className="env-info-row">
+                <span className="env-info-label">环境状态</span>
+                <span className={`env-info-badge ${envReady ? 'env-info-badge--ready' : 'env-info-badge--warn'}`}>
+                  {environmentLabel}
+                </span>
+              </div>
+              {environmentProbe?.message ? (
+                <div className="env-info-row">
+                  <span className="env-info-label">详情</span>
+                  <span className="env-info-value">{environmentProbe.message}</span>
+                </div>
+              ) : null}
+              <div className="env-info-row">
+                <span className="env-info-label">运行驱动</span>
+                <span className="env-info-value env-info-mono">{driverDisplayLabel}</span>
+              </div>
+            </div>
+
+            <div className="group-title">环境配置</div>
 
             <SettingCard>
               <SettingRow
-                name="工作目录"
+                name="根目录"
                 description={
                   workspaceLocked
                     ? '有任务进行中，暂时锁定'
-                    : '切换后立即重新检测运行环境'
+                    : '模型等资源路径均相对此目录'
                 }
                 icon="📂"
               >
@@ -117,147 +132,63 @@ export function SettingsPage({
                   </button>
                 </div>
               </SettingRow>
-            </SettingCard>
 
-            <div className="group-title">运行环境</div>
-
-            <div className="env-info-card">
-              <div className="env-info-row">
-                <span className="env-info-label">环境状态</span>
-                <span className={`env-info-badge ${envReady ? 'env-info-badge--ready' : 'env-info-badge--warn'}`}>
-                  {environmentLabel}
-                </span>
-              </div>
-              {environmentProbe?.message ? (
-                <div className="env-info-row">
-                  <span className="env-info-label">详情</span>
-                  <span className="env-info-value">{environmentProbe.message}</span>
-                </div>
-              ) : null}
-              <div className="env-info-row">
-                <span className="env-info-label">运行驱动</span>
-                <span className="env-info-value env-info-mono">{driverLabel}</span>
-              </div>
-              {pythonPath ? (
-                <div className="env-info-row">
-                  <span className="env-info-label">Python 路径</span>
-                  <span className="env-info-value env-info-mono env-info-path">{pythonPath}</span>
-                </div>
-              ) : null}
-            </div>
-
-            <div className="group-title">网络设置</div>
-
-            <SettingCard>
               <SettingRow
-                name="代理设置"
-                description="代理服务器设置"
-                icon="🛩"
-                trailing={
-                  <span className="setting-chevron" aria-hidden="true">
-                    ⌃
-                  </span>
-                }
-              />
-
-              <SettingRow name="代理服务器地址" inset>
-                <input
-                  className="proxy-input"
-                  aria-label="代理服务器地址"
-                  value={proxyAddress}
-                  onChange={(event) => setProxyAddress(event.target.value)}
-                />
+                name="Python 运行方式"
+                description="uv 为推荐方式；conda 可指定自有环境"
+              >
+                <div className="driver-select-wrap">
+                  <button
+                    type="button"
+                    className={`driver-option ${localDriver === 'uv' ? 'driver-option--active' : ''}`}
+                    onClick={() => setLocalDriver('uv')}
+                  >
+                    uv
+                  </button>
+                  <button
+                    type="button"
+                    className={`driver-option ${localDriver === 'conda' ? 'driver-option--active' : ''}`}
+                    onClick={() => setLocalDriver('conda')}
+                  >
+                    conda
+                  </button>
+                </div>
               </SettingRow>
 
-              <SettingRow name="将代理应用到 Git" inset>
-                <ToggleSwitch
-                  label="将代理应用到 Git"
-                  checked={proxyToggles.git}
-                  onChange={(next) =>
-                    setProxyToggles((current) => ({ ...current, git: next }))
-                  }
-                />
-              </SettingRow>
-
-              <SettingRow name="将代理应用到 Pip" inset>
-                <ToggleSwitch
-                  label="将代理应用到 Pip"
-                  checked={proxyToggles.pip}
-                  onChange={(next) =>
-                    setProxyToggles((current) => ({ ...current, pip: next }))
-                  }
-                />
-              </SettingRow>
-
-              <SettingRow name="将代理应用到环境变量" inset>
-                <ToggleSwitch
-                  label="将代理应用到环境变量"
-                  checked={proxyToggles.env}
-                  onChange={(next) =>
-                    setProxyToggles((current) => ({ ...current, env: next }))
-                  }
-                />
-              </SettingRow>
-
-              <SettingRow name="将代理应用到模型下载" inset>
-                <ToggleSwitch
-                  label="将代理应用到模型下载"
-                  checked={proxyToggles.modelDownload}
-                  onChange={(next) =>
-                    setProxyToggles((current) => ({
-                      ...current,
-                      modelDownload: next,
-                    }))
-                  }
-                />
-              </SettingRow>
-            </SettingCard>
-
-            <SettingCard>
-              {mirrorSettings.map((item) => (
+              {localDriver === 'conda' ? (
                 <SettingRow
-                  key={item.id}
-                  name={item.label}
-                  description={item.description}
-                  icon={item.icon}
+                  name="Python 可执行文件"
+                  description="指定 conda 环境中的 python 或 python.exe 路径"
                 >
-                  <ToggleSwitch
-                    label={item.label}
-                    checked={mirrorToggles[item.id]}
-                    onChange={(next) =>
-                      setMirrorToggles((current) => ({
-                        ...current,
-                        [item.id]: next,
-                      }))
-                    }
-                  />
+                  <div className="workspace-actions">
+                    <input
+                      className="proxy-input workspace-input"
+                      aria-label="Python 可执行文件路径"
+                      value={localPythonExePath}
+                      onChange={(event) => setLocalPythonExePath(event.target.value)}
+                      placeholder="例：/home/user/miniconda3/envs/tts/bin/python"
+                    />
+                    <button
+                      type="button"
+                      className="workspace-button"
+                      onClick={handleBrowsePythonExe}
+                    >
+                      浏览
+                    </button>
+                  </div>
                 </SettingRow>
-              ))}
+              ) : null}
             </SettingCard>
 
-            <div className="group-title">偏好设置</div>
-
-            <SettingCard>
-              {preferenceSettings.map((item) => (
-                <SettingRow
-                  key={item.id}
-                  name={item.label}
-                  description={item.description}
-                  icon={item.icon}
-                >
-                  <ToggleSwitch
-                    label={item.label}
-                    checked={preferenceToggles[item.id]}
-                    onChange={(next) =>
-                      setPreferenceToggles((current) => ({
-                        ...current,
-                        [item.id]: next,
-                      }))
-                    }
-                  />
-                </SettingRow>
-              ))}
-            </SettingCard>
+            <div className="settings-save-row">
+              <button
+                type="button"
+                className="settings-save-button"
+                onClick={() => onSave(localDriver, localPythonExePath)}
+              >
+                保存并重新检测
+              </button>
+            </div>
 
             <div className="footer-space" />
           </div>

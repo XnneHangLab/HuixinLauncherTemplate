@@ -34,7 +34,9 @@ interface RenderPageOptions {
   environmentProbe: EnvironmentProbe | null;
   onChooseWorkspaceRoot: () => void;
   onUseRepoWorkspaceRoot: () => void;
-  pythonPath: string;
+  pythonExePath: string;
+  onChoosePythonExe: () => Promise<string | null>;
+  onSave: (driver: RuntimeDriver, pythonExePath: string) => void;
   onSetAutoScroll: (next: boolean) => void;
   onSetWrapLines: (next: boolean) => void;
   onClearLogs: () => void;
@@ -63,7 +65,10 @@ export function renderPage(
           environmentProbe={options.environmentProbe}
           onChooseWorkspaceRoot={options.onChooseWorkspaceRoot}
           onUseRepoWorkspaceRoot={options.onUseRepoWorkspaceRoot}
-          pythonPath={options.pythonPath}
+          runtimeDriver={options.runtimeDriver}
+          pythonExePath={options.pythonExePath}
+          onChoosePythonExe={options.onChoosePythonExe}
+          onSave={options.onSave}
         />
       );
     case 'advanced':

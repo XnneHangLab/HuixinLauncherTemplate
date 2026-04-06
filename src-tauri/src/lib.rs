@@ -26,6 +26,8 @@ pub fn run() {
             runtime::commands::list_download_tasks,
             runtime::commands::open_managed_path,
             runtime::commands::export_console_logs,
+            runtime::commands::set_runtime_driver,
+            runtime::commands::pick_python_path_command,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

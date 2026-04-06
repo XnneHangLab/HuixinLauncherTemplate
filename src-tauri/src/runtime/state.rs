@@ -3,6 +3,12 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum RuntimeDriverConfig {
+    Uv,
+    DirectPython { python_path: PathBuf },
+}
+
 use super::models::{RuntimeTaskRecord, TaskStatus};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -109,6 +115,7 @@ pub struct RuntimeState {
     pub repo_root: PathBuf,
     pub workspace_root: Arc<Mutex<PathBuf>>,
     pub queue: Arc<Mutex<QueueState>>,
+    pub driver_config: Arc<Mutex<RuntimeDriverConfig>>,
 }
 
 impl RuntimeState {
@@ -117,6 +124,7 @@ impl RuntimeState {
             repo_root,
             workspace_root: Arc::new(Mutex::new(workspace_root)),
             queue: Arc::new(Mutex::new(QueueState::default())),
+            driver_config: Arc::new(Mutex::new(RuntimeDriverConfig::Uv)),
         }
     }
 
@@ -126,6 +134,14 @@ impl RuntimeState {
 
     pub fn set_workspace_root(&self, next: PathBuf) {
         *self.workspace_root.lock().unwrap() = next;
+    }
+
+    pub fn current_driver_config(&self) -> RuntimeDriverConfig {
+        self.driver_config.lock().unwrap().clone()
+    }
+
+    pub fn set_driver_config(&self, next: RuntimeDriverConfig) {
+        *self.driver_config.lock().unwrap() = next;
     }
 }
 

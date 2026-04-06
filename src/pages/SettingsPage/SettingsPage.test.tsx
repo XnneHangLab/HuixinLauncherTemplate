@@ -8,6 +8,8 @@ describe('SettingsPage', () => {
     const user = userEvent.setup();
     const onChooseWorkspaceRoot = vi.fn();
     const onUseRepoWorkspaceRoot = vi.fn();
+    const onChoosePythonExe = vi.fn().mockResolvedValue(null);
+    const onSave = vi.fn();
 
     render(
       <SettingsPage
@@ -26,7 +28,10 @@ describe('SettingsPage', () => {
         }}
         onChooseWorkspaceRoot={onChooseWorkspaceRoot}
         onUseRepoWorkspaceRoot={onUseRepoWorkspaceRoot}
-        pythonPath=""
+        runtimeDriver="uv"
+        pythonExePath=""
+        onChoosePythonExe={onChoosePythonExe}
+        onSave={onSave}
       />,
     );
 
@@ -47,12 +52,6 @@ describe('SettingsPage', () => {
     );
     expect(screen.getByLabelText('工作目录路径')).toHaveValue('/repo');
     expect(screen.getByText('CPU 就绪')).toBeInTheDocument();
-    expect(screen.getByLabelText('代理服务器地址')).toHaveValue(
-      'http://127.0.0.1:xxxx',
-    );
-    expect(
-      screen.getByRole('button', { name: '将代理应用到 Git' }),
-    ).toHaveAttribute('aria-pressed', 'true');
 
     await user.click(screen.getByRole('button', { name: '更改目录' }));
     expect(onChooseWorkspaceRoot).toHaveBeenCalledTimes(1);
@@ -60,13 +59,16 @@ describe('SettingsPage', () => {
     await user.click(screen.getByRole('button', { name: '重置为项目目录' }));
     expect(onUseRepoWorkspaceRoot).toHaveBeenCalledTimes(1);
 
+    await user.click(screen.getByRole('button', { name: '保存并重新检测' }));
+    expect(onSave).toHaveBeenCalledWith('uv', '');
+
     await user.click(screen.getByRole('tab', { name: '关于' }));
     expect(screen.getByRole('tabpanel', { name: '关于' })).toHaveAttribute(
       'id',
       'settings-panel-about',
     );
     expect(
-      screen.getByText('XnneHangLab Launcher Template'),
+      screen.getByText('这里仅仅只是一个占位，这里还什么都没有 ...'),
     ).toBeInTheDocument();
   });
 
@@ -88,11 +90,38 @@ describe('SettingsPage', () => {
         }}
         onChooseWorkspaceRoot={() => undefined}
         onUseRepoWorkspaceRoot={() => undefined}
-        pythonPath=""
+        runtimeDriver="uv"
+        pythonExePath=""
+        onChoosePythonExe={vi.fn().mockResolvedValue(null)}
+        onSave={vi.fn()}
       />,
     );
 
     expect(screen.getByRole('button', { name: '更改目录' })).toBeDisabled();
     expect(screen.getByRole('button', { name: '重置为项目目录' })).toBeDisabled();
+  });
+
+  it('shows python exe path input when conda driver is selected', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <SettingsPage
+        workspaceRoot="/repo"
+        workspaceLocked={false}
+        environmentProbe={null}
+        onChooseWorkspaceRoot={() => undefined}
+        onUseRepoWorkspaceRoot={() => undefined}
+        runtimeDriver="uv"
+        pythonExePath=""
+        onChoosePythonExe={vi.fn().mockResolvedValue(null)}
+        onSave={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByLabelText('Python 可执行文件路径')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'conda' }));
+
+    expect(screen.getByLabelText('Python 可执行文件路径')).toBeInTheDocument();
   });
 });

@@ -42,13 +42,11 @@ describe('App', () => {
 
     await user.click(screen.getByRole('button', { name: '设置' }));
 
-    const proxyInput = screen.getByLabelText('代理服务器地址');
-    const styles = getComputedStyle(proxyInput);
+    expect(screen.getByLabelText('工作目录路径')).toBeInTheDocument();
     const launcherRoot = document.querySelector('.launcher-root');
     const rootStyles = getComputedStyle(launcherRoot as Element);
 
     expect(rootStyles.getPropertyValue('--input-bg').trim()).toBe('#fcfeff');
     expect(rootStyles.getPropertyValue('--input-text').trim()).toBe('#182231');
-    expect(styles.color).toBe('var(--input-text)');
   });
 });
