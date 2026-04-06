@@ -22,7 +22,7 @@ describe('App', () => {
 
     const { container } = render(<App />);
     const launcherRoot = container.querySelector('.launcher-root');
-    const navHome = screen.getByRole('button', { name: '一键启动' });
+    const navHome = screen.getAllByRole('button', { name: '一键启动' })[0];
     const navStyles = getComputedStyle(navHome);
     const rootStyles = getComputedStyle(launcherRoot as Element);
 

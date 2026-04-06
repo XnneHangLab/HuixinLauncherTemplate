@@ -118,7 +118,8 @@ describe('ModelsPage', () => {
     );
 
     const downloadBtns = screen.getAllByRole('button', { name: '下载' });
-    expect(downloadBtns[0]).not.toBeDisabled(); // genie-tts
-    expect(downloadBtns[1]).toBeDisabled();     // gsv-lite (gpu only)
+    expect(downloadBtns[0]).not.toBeDisabled(); // genie-base (cpu ok)
+    expect(downloadBtns[1]).not.toBeDisabled(); // luming-genie-tts (cpu ok)
+    expect(downloadBtns[2]).toBeDisabled();     // gsv-lite (gpu only)
   });
 });

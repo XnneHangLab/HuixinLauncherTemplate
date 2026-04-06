@@ -29,6 +29,7 @@ interface RenderPageOptions {
   onDownloadGsvLite: () => void;
   onDownloadQwenTts06b: () => void;
   onDownloadQwenTts17b: () => void;
+  onDownloadLumingGenieTts: () => void;
   onOpenPath: (pathKey: string) => void;
   onLaunchWebui: () => void;
   webuiRunning: boolean;
@@ -110,6 +111,7 @@ export function renderPage(
           onDownloadGsvLite={options.onDownloadGsvLite}
           onDownloadQwenTts06b={options.onDownloadQwenTts06b}
           onDownloadQwenTts17b={options.onDownloadQwenTts17b}
+          onDownloadLumingGenieTts={options.onDownloadLumingGenieTts}
           scriptsReady={options.scriptsReady}
         />
       );

@@ -286,6 +286,35 @@ export function AppShell() {
     }
   }
 
+  async function handleDownloadLumingGenieTts() {
+    if (!isEnvironmentReady(environmentProbe)) {
+      setLogs((current) => [
+        ...current,
+        createConsoleLog('stderr', '环境未就绪，已禁止执行运行时脚本'),
+      ]);
+      return;
+    }
+
+    try {
+      const task = await enqueueDownload('luming-genie-tts-v2-pro-plus');
+      setTasks((current) => {
+        const next = current.filter((item) => item.taskId !== task.taskId);
+        next.push(task);
+        return next;
+      });
+      setLogs((current) => [
+        ...current,
+        createConsoleLog('system', `${task.label}: ${task.message}`),
+      ]);
+      setActivePage('models');
+    } catch (error) {
+      setLogs((current) => [
+        ...current,
+        createConsoleLog('stderr', `创建下载任务失败: ${toErrorMessage(error)}`),
+      ]);
+    }
+  }
+
   async function handleWorkspaceProbe(nextProbe: EnvironmentProbe) {
     setEnvironmentProbe(nextProbe);
     setInspection(null);
@@ -446,6 +475,7 @@ export function AppShell() {
               onDownloadGsvLite: handleDownloadGsvLite,
               onDownloadQwenTts06b: handleDownloadQwenTts06b,
               onDownloadQwenTts17b: handleDownloadQwenTts17b,
+              onDownloadLumingGenieTts: handleDownloadLumingGenieTts,
               onOpenPath: handleOpenManagedPath,
               onLaunchWebui: handleLaunchWebui,
               webuiRunning,

@@ -188,6 +188,7 @@ fn validate_download_target(target: &str) -> Result<(&'static str, &'static str)
         "gsv-lite" => Ok(("gsv-lite", "GSV-Lite 数据包")),
         "qwen-tts-0.6b" => Ok(("qwen-tts-0.6b", "Qwen3-TTS 0.6B")),
         "qwen-tts-1.7b" => Ok(("qwen-tts-1.7b", "Qwen3-TTS 1.7B")),
+        "luming-genie-tts-v2-pro-plus" => Ok(("luming-genie-tts-v2-pro-plus", "路鸣 Genie-TTS v2 Pro+")),
         other => Err(format!("unsupported download target: {other}")),
     }
 }
