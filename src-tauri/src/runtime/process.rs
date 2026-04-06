@@ -297,34 +297,23 @@ pub fn run_download_command(
         if let Ok(envelope) = serde_json::from_str::<PythonEnvelope>(&line) {
             if envelope.kind == "event" {
                 let payload = envelope.payload;
-                let status = payload["status"].as_str().unwrap_or("downloading");
-                {
+                let timestamp = super::state::current_timestamp();
+                let event = runtime_event_from_python_payload(
+                    &task_id,
+                    &target,
+                    &payload,
+                    &timestamp,
+                );
+                if event.event != "download.file_progress" {
                     let mut queue = state.queue.lock().unwrap();
                     queue.apply_update(
                         &task_id,
-                        task_status_from_str(status),
-                        payload["message"].as_str().unwrap_or("").to_string(),
-                        payload["progressCurrent"].as_u64().unwrap_or(0),
-                        payload["progressTotal"].as_u64().unwrap_or(3),
+                        task_status_from_str(&event.status),
+                        event.message.clone(),
+                        event.progress_current,
+                        event.progress_total,
                     );
                 }
-                let event = RuntimeEventPayload {
-                    event: payload["event"]
-                        .as_str()
-                        .unwrap_or("download.progress")
-                        .to_string(),
-                    task_id: task_id.clone(),
-                    target: payload["target"].as_str().unwrap_or(&target).to_string(),
-                    status: status.to_string(),
-                    message: payload["message"].as_str().unwrap_or("").to_string(),
-                    progress_current: payload["progressCurrent"].as_u64().unwrap_or(0),
-                    progress_total: payload["progressTotal"].as_u64().unwrap_or(3),
-                    progress_unit: payload["progressUnit"]
-                        .as_str()
-                        .unwrap_or("stage")
-                        .to_string(),
-                    timestamp: super::state::current_timestamp(),
-                };
                 app.emit("runtime:event", &event)
                     .map_err(|error| error.to_string())?;
             }
@@ -565,6 +554,39 @@ fn build_terminal_failure_event(
         progress_total: 3,
         progress_unit: "stage".to_string(),
         timestamp: timestamp.to_string(),
+        desc: None,
+        percent: None,
+        downloaded: None,
+        total: None,
+    }
+}
+
+fn runtime_event_from_python_payload(
+    task_id: &str,
+    default_target: &str,
+    payload: &serde_json::Value,
+    timestamp: &str,
+) -> RuntimeEventPayload {
+    RuntimeEventPayload {
+        event: payload["event"]
+            .as_str()
+            .unwrap_or("download.progress")
+            .to_string(),
+        task_id: task_id.to_string(),
+        target: payload["target"].as_str().unwrap_or(default_target).to_string(),
+        status: payload["status"].as_str().unwrap_or("downloading").to_string(),
+        message: payload["message"].as_str().unwrap_or("").to_string(),
+        progress_current: payload["progressCurrent"].as_u64().unwrap_or(0),
+        progress_total: payload["progressTotal"].as_u64().unwrap_or(3),
+        progress_unit: payload["progressUnit"]
+            .as_str()
+            .unwrap_or("stage")
+            .to_string(),
+        timestamp: timestamp.to_string(),
+        desc: payload["desc"].as_str().map(str::to_string),
+        percent: payload["percent"].as_u64(),
+        downloaded: payload["downloaded"].as_str().map(str::to_string),
+        total: payload["total"].as_str().map(str::to_string),
     }
 }
 
@@ -777,7 +799,7 @@ mod tests {
 
     use super::{
         build_terminal_failure_event, build_uv_python_command, managed_path_from_payload,
-        EnvironmentProbePayload,
+        runtime_event_from_python_payload, EnvironmentProbePayload,
     };
 
     #[test]
@@ -882,5 +904,38 @@ mod tests {
         assert_eq!(event.progress_total, 3);
         assert_eq!(event.progress_unit, "stage");
         assert_eq!(event.timestamp, "1712300000");
+    }
+
+    #[test]
+    fn runtime_event_from_python_payload_keeps_file_progress_fields() {
+        let payload = json!({
+            "event": "download.file_progress",
+            "target": "genie-base",
+            "status": "downloading",
+            "message": "",
+            "progressCurrent": 1,
+            "progressTotal": 3,
+            "progressUnit": "stage",
+            "desc": "GenieData/chinese-hubert-base/chinese-hubert-base.onnx",
+            "percent": 42,
+            "downloaded": "75.0M",
+            "total": "180M"
+        });
+
+        let event = runtime_event_from_python_payload(
+            "task-1",
+            "genie-base",
+            &payload,
+            "1712300001",
+        );
+
+        assert_eq!(event.event, "download.file_progress");
+        assert_eq!(
+            event.desc.as_deref(),
+            Some("GenieData/chinese-hubert-base/chinese-hubert-base.onnx")
+        );
+        assert_eq!(event.percent, Some(42));
+        assert_eq!(event.downloaded.as_deref(), Some("75.0M"));
+        assert_eq!(event.total.as_deref(), Some("180M"));
     }
 }

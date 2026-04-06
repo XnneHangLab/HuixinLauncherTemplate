@@ -37,6 +37,14 @@ pub struct RuntimeEventPayload {
     pub progress_total: u64,
     pub progress_unit: String,
     pub timestamp: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub desc: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub percent: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub downloaded: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub total: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
