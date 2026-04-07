@@ -18,8 +18,8 @@ const MODEL_SPECS: ModelSpec[] = [
   },
   {
     key: 'luming-genie-tts-v2-pro-plus',
-    title: '路鸣 Genie-TTS v2 Pro+',
-    description: '路鸣角色 Genie-TTS 角色模型包，CPU 推理，需配合 Genie-TTS 基础资源使用。',
+    title: '鹿鸣 Genie-TTS v2 Pro+',
+    description: '鹿鸣角色 Genie-TTS 角色模型包，CPU 推理，需配合 Genie-TTS 基础资源使用。',
     icon: '🎤',
     tags: ['CPU'],
     requiresGpu: false,
@@ -29,6 +29,14 @@ const MODEL_SPECS: ModelSpec[] = [
     title: 'GSV-Lite 数据包',
     description: '包含 HuBERT、Roberta、G2P 及 SV 共四项子资源，仅 GPU 环境可用。',
     icon: '🎙',
+    tags: ['GPU'],
+    requiresGpu: true,
+  },
+  {
+    key: 'luming-gsv-lite-v2-pro-plus',
+    title: '鹿鸣 GSV-Lite v2 Pro+',
+    description: '鹿鸣角色 GSV-Lite 模型包，GPU 推理，需配合 GSV-Lite 数据包使用。',
+    icon: '🎤',
     tags: ['GPU'],
     requiresGpu: true,
   },
@@ -70,6 +78,7 @@ interface ModelsPageProps {
   onDownloadQwenTts06b: () => void;
   onDownloadQwenTts17b: () => void;
   onDownloadLumingGenieTts: () => void;
+  onDownloadLumingGsvLite: () => void;
   scriptsReady: boolean;
 }
 
@@ -83,6 +92,7 @@ export function ModelsPage({
   onDownloadQwenTts06b,
   onDownloadQwenTts17b,
   onDownloadLumingGenieTts,
+  onDownloadLumingGsvLite,
   scriptsReady,
 }: ModelsPageProps) {
   const gpuReady =
@@ -94,6 +104,8 @@ export function ModelsPage({
       onDownloadGenieBase();
     } else if (key === 'luming-genie-tts-v2-pro-plus') {
       onDownloadLumingGenieTts();
+    } else if (key === 'luming-gsv-lite-v2-pro-plus') {
+      onDownloadLumingGsvLite();
     } else if (key === 'gsv-lite') {
       onDownloadGsvLite();
     } else if (key === 'qwen-tts-0.6b') {
