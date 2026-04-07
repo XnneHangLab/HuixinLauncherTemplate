@@ -729,7 +729,7 @@ fn build_webui_port_probe_plan(port: u16, platform: ProcessPlatform) -> WebuiPor
                 "-NoProfile".to_string(),
                 "-Command".to_string(),
                 format!(
-                    "Get-NetTCPConnection -LocalPort {port} -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess"
+                    "Get-NetTCPConnection -LocalPort {port} -State Listen -ErrorAction SilentlyContinue | ForEach-Object {{ $_.OwningProcess }}"
                 ),
             ],
         },
@@ -1323,7 +1323,7 @@ mod tests {
                 args: vec![
                     "-NoProfile".to_string(),
                     "-Command".to_string(),
-                    "Get-NetTCPConnection -LocalPort 7860 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess".to_string(),
+                    "Get-NetTCPConnection -LocalPort 7860 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { $_.OwningProcess }".to_string(),
                 ],
             }
         );
