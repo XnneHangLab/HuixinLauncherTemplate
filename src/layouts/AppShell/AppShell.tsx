@@ -15,6 +15,7 @@ import {
   inspectRuntime,
   launchWebui,
   listDownloadTasks,
+  listManagedFolders,
   openManagedPath,
   pickPythonPath,
   probeEnvironment,
@@ -25,6 +26,7 @@ import {
 } from '../../services/runtime/bridge';
 import {
   applyRuntimeEvent,
+  buildFolderItemsFromPaths,
   buildManagedFolderItems,
   createConsoleLogFromRuntimeEvent,
   getQueueSummary,
@@ -91,6 +93,11 @@ export function AppShell() {
 
     void (async () => {
       try {
+        // Populate folder cards immediately from Rust state — no Python subprocess needed
+        listManagedFolders()
+          .then((paths) => { if (!disposed) setFolders(buildFolderItemsFromPaths(paths)); })
+          .catch(() => {});
+
         const [nextProbe, nextTasks] = await Promise.all([
           probeEnvironment(),
           listDownloadTasks(),
@@ -103,7 +110,6 @@ export function AppShell() {
 
         if (!isEnvironmentReady(nextProbe)) {
           setInspection(null);
-          setFolders([]);
           return;
         }
 

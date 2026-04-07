@@ -516,7 +516,7 @@ pub fn resolve_managed_path(workspace_root: &Path, path_key: &str) -> Result<Pat
     match path_key {
         "workspace" => Ok(workspace_root.to_path_buf()),
         "models" => Ok(models_root),
-        "genieBase" => Ok(workspace_root.join("models").join("genie").join("base")),
+        "genieBase" => Ok(workspace_root.join("models").join("GenieData")),
         "modelscopeCache" => Ok(workspace_root.join("models").join("cache").join("modelscope")),
         "downloadLogs" => Ok(logs_root.join("downloads")),
         other => Err(format!("managed path key not found in local runtime layout: {other}")),

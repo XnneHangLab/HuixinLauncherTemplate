@@ -107,6 +107,20 @@ pub fn list_download_tasks(state: State<'_, RuntimeState>) -> Result<serde_json:
 }
 
 #[tauri::command]
+pub fn list_managed_folders(state: State<'_, RuntimeState>) -> Result<serde_json::Value, String> {
+    let workspace_root = state.current_workspace_root();
+    let models_root = workspace_root.join("models");
+    let logs_root = workspace_root.join("logs");
+    let items = serde_json::json!([
+        { "key": "workspace",    "label": "根目录",           "path": workspace_root.display().to_string() },
+        { "key": "models",       "label": "模型目录",         "path": models_root.display().to_string() },
+        { "key": "genieBase",    "label": "Genie 基础资源",   "path": models_root.join("GenieData").display().to_string() },
+        { "key": "downloadLogs", "label": "下载日志",         "path": logs_root.join("downloads").display().to_string() },
+    ]);
+    Ok(items)
+}
+
+#[tauri::command]
 pub fn open_managed_path(state: State<'_, RuntimeState>, path_key: String) -> Result<(), String> {
     let workspace_root = state.current_workspace_root();
     let path = resolve_managed_path(&workspace_root, &path_key)?;

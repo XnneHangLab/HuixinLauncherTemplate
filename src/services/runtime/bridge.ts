@@ -2,6 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import type {
   EnvironmentProbe,
+  ManagedPath,
   RuntimeEvent,
   RuntimeInspection,
   RuntimeTaskRecord,
@@ -29,6 +30,10 @@ export function enqueueDownload(target: string) {
 
 export function listDownloadTasks() {
   return invoke<RuntimeTaskRecord[]>('list_download_tasks');
+}
+
+export function listManagedFolders() {
+  return invoke<ManagedPath[]>('list_managed_folders');
 }
 
 export function openManagedPath(pathKey: string) {

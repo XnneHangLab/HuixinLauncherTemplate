@@ -31,6 +31,7 @@ pub fn run() {
             runtime::commands::inspect_runtime,
             runtime::commands::enqueue_download,
             runtime::commands::list_download_tasks,
+            runtime::commands::list_managed_folders,
             runtime::commands::open_managed_path,
             runtime::commands::export_console_logs,
             runtime::commands::set_runtime_driver,

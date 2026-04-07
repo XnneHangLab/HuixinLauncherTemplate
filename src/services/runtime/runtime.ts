@@ -134,7 +134,11 @@ const folderIcons: Record<string, string> = {
 export function buildManagedFolderItems(
   inspection: RuntimeInspection,
 ): ManagedFolderItem[] {
-  return inspection.managedPaths.map((item) => ({
+  return buildFolderItemsFromPaths(inspection.managedPaths);
+}
+
+export function buildFolderItemsFromPaths(paths: ManagedPath[]): ManagedFolderItem[] {
+  return paths.map((item) => ({
     key: item.key,
     title: item.label,
     path: item.path,
