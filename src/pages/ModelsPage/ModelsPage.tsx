@@ -149,9 +149,7 @@ export function ModelsPage({
           <div className="models-page__task-list">
             {tasks.map((task) => {
               const fp =
-                task.status === 'downloading' && fileProgress?.target === task.target
-                  ? fileProgress
-                  : null;
+                fileProgress?.target === task.target ? fileProgress : null;
               return (
                 <div key={task.taskId} className="models-page__task">
                   <div className="models-page__task-info">
