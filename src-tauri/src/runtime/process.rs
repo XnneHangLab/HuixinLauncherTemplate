@@ -766,6 +766,9 @@ fn find_listener_pids_for_port(port: u16) -> Result<Vec<u32>, String> {
                 let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
                 let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
                 let detail = if !stderr.is_empty() { stderr } else { stdout };
+                if detail.is_empty() {
+                    return Ok(Vec::new());
+                }
                 return Err(format!("failed to probe port {port}: {detail}"));
             }
             Ok(parse_listener_pids(&output.stdout))
