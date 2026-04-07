@@ -72,6 +72,8 @@
   --nav-active-bg-end: rgba(74, 144, 226, 0.06);
   --nav-active-border: rgba(74, 144, 226, 0.28);
   --nav-active-inset: rgba(255, 255, 255, 0.03);
+  --skel-base: rgba(255, 255, 255, 0.05);
+  --skel-shine: rgba(255, 255, 255, 0.10);
 }
 
 .launcher-root[data-theme='day'] {
@@ -147,4 +149,6 @@
   --nav-active-bg-end: rgba(59, 130, 246, 0.08);
   --nav-active-border: rgba(59, 130, 246, 0.28);
   --nav-active-inset: rgba(255, 255, 255, 0.55);
+  --skel-base: rgba(24, 34, 49, 0.06);
+  --skel-shine: rgba(24, 34, 49, 0.12);
 }

@@ -2,6 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import type {
   EnvironmentProbe,
+  ManagedPath,
   RuntimeEvent,
   RuntimeInspection,
   RuntimeTaskRecord,
@@ -31,12 +32,34 @@ export function listDownloadTasks() {
   return invoke<RuntimeTaskRecord[]>('list_download_tasks');
 }
 
+export function listManagedFolders() {
+  return invoke<ManagedPath[]>('list_managed_folders');
+}
+
 export function openManagedPath(pathKey: string) {
   return invoke<void>('open_managed_path', { pathKey });
 }
 
 export function exportConsoleLogs(contents: string) {
   return invoke<string>('export_console_logs', { contents });
+}
+
+export function setRuntimeDriver(driver: string, pythonPath: string | null) {
+  return invoke<EnvironmentProbe>('set_runtime_driver', { driver, pythonPath });
+}
+
+export function pickPythonPath() {
+  return invoke<string | null>('pick_python_path_command');
+}
+
+export function launchWebui() {
+  return invoke<void>('launch_webui');
+}
+
+export async function subscribeWebuiStatus(onStatus: (status: string) => void) {
+  return listen<string>('webui:status', (event) => {
+    onStatus(event.payload);
+  });
 }
 
 export async function subscribeRuntimeEvents(

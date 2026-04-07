@@ -15,7 +15,6 @@ interface ConsolePageProps {
   onSetAutoScroll: (next: boolean) => void;
   onSetWrapLines: (next: boolean) => void;
   onClearLogs: () => void;
-  onCopyLog: (text: string) => void;
   onExportLogs: () => void;
 }
 
@@ -28,7 +27,6 @@ export function ConsolePage({
   onSetAutoScroll,
   onSetWrapLines,
   onClearLogs,
-  onCopyLog,
   onExportLogs,
 }: ConsolePageProps) {
   const queueSummary = getQueueSummary(tasks);
@@ -37,6 +35,11 @@ export function ConsolePage({
     ? `当前任务 ${queueSummary.activeTask.label}`
     : '当前没有活动任务';
   const lastLog = logs[logs.length - 1];
+
+  function handleCopyAll() {
+    const text = logs.map((e) => e.text).join('\n');
+    void navigator.clipboard?.writeText(text);
+  }
 
   return (
     <div className="console-page">
@@ -55,7 +58,10 @@ export function ConsolePage({
           <button type="button" onClick={onClearLogs}>
             清空日志
           </button>
-          <button type="button" onClick={onExportLogs}>
+          <button type="button" onClick={handleCopyAll} disabled={logs.length === 0}>
+            全部复制
+          </button>
+          <button type="button" onClick={onExportLogs} disabled={logs.length === 0}>
             导出日志
           </button>
           <button
@@ -83,25 +89,11 @@ export function ConsolePage({
           </div>
         ) : (
           <div className="console-log-list">
-            {logs.map((entry, index) => (
-              <article
-                key={entry.id}
-                className={`console-log console-log--${entry.kind}`}
-              >
-                <div className="console-log__meta">
-                  <span>{entry.time}</span>
-                  <span>{entry.kind}</span>
-                </div>
+            {logs.map((entry) => (
+              <div key={entry.id} className={`console-log console-log--${entry.kind}`}>
+                <span className="console-log__time">{entry.time}</span>
                 <pre className="console-log__text">{entry.text}</pre>
-                <button
-                  type="button"
-                  className="console-log__copy"
-                  aria-label={`复制日志 ${index + 1}`}
-                  onClick={() => onCopyLog(entry.text)}
-                >
-                  复制
-                </button>
-              </article>
+              </div>
             ))}
           </div>
         )}

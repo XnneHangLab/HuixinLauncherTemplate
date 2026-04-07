@@ -21,23 +21,15 @@ export function FolderGrid({ items, onOpen }: FolderGridProps) {
   return (
     <div className="folder-grid">
       {placeholderFolders.map((item) => (
-        <button
-          key={item.key}
-          type="button"
-          className="folder-card folder-card--placeholder"
-          aria-label={item.title}
-        >
+        <div key={item.key} className="folder-card folder-card--skeleton" aria-hidden="true">
           <span className="folder-left">
-            <span className="folder-icon" aria-hidden="true">
-              {item.icon}
-            </span>
+            <span className="folder-icon skel-block" />
             <span className="folder-text">
-              <span className="folder-title">{item.title}</span>
-              <span className="folder-sub">{item.path}</span>
+              <span className="skel-block skel-block--title" />
+              <span className="skel-block skel-block--sub" />
             </span>
           </span>
-          <span className="arrow" aria-hidden="true">›</span>
-        </button>
+        </div>
       ))}
     </div>
   );

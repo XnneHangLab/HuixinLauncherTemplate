@@ -162,6 +162,92 @@ describe('AppShell', () => {
     expect(screen.getByText('CPU 就绪')).toBeInTheDocument();
   });
 
+  it('refreshes inspection after download completion so model card status matches disk state', async () => {
+    const user = userEvent.setup();
+    vi.mocked(runtimeBridge.inspectRuntime)
+      .mockResolvedValueOnce({
+        runtimeDriver: 'uv',
+        pythonPath: '/repo/.venv/bin/python',
+        defaultBackend: 'genie-tts',
+        environment: {
+          mode: 'cpu',
+          torchAvailable: true,
+          torchVersion: '2.6.0+cpu',
+          cudaAvailable: false,
+          issues: [],
+        },
+        availableBackends: ['genie-tts'],
+        managedPaths: [
+          { key: 'workspace', label: '根目录', path: '/repo' },
+          { key: 'genieBase', label: 'Genie 基础资源', path: '/repo/models/GenieData' },
+          { key: 'downloadLogs', label: '下载日志', path: '/repo/logs/downloads' },
+        ],
+        resources: {
+          'genie-base': {
+            key: 'genie-base',
+            label: 'GenieData 基础资源',
+            status: 'missing',
+            path: '/repo/models/GenieData',
+            missingPaths: ['speaker_encoder.onnx'],
+          },
+        },
+        latestMessage: '运行驱动 uv，当前环境 CPU',
+      })
+      .mockResolvedValueOnce({
+        runtimeDriver: 'uv',
+        pythonPath: '/repo/.venv/bin/python',
+        defaultBackend: 'genie-tts',
+        environment: {
+          mode: 'cpu',
+          torchAvailable: true,
+          torchVersion: '2.6.0+cpu',
+          cudaAvailable: false,
+          issues: [],
+        },
+        availableBackends: ['genie-tts'],
+        managedPaths: [
+          { key: 'workspace', label: '根目录', path: '/repo' },
+          { key: 'genieBase', label: 'Genie 基础资源', path: '/repo/models/GenieData' },
+          { key: 'downloadLogs', label: '下载日志', path: '/repo/logs/downloads' },
+        ],
+        resources: {
+          'genie-base': {
+            key: 'genie-base',
+            label: 'GenieData 基础资源',
+            status: 'ready',
+            path: '/repo/models/GenieData',
+            missingPaths: [],
+          },
+        },
+        latestMessage: '运行驱动 uv，当前环境 CPU',
+      });
+
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: '模型管理' }));
+    await waitFor(() => expect(screen.getByText('未下载')).toBeInTheDocument());
+
+    const mockedBridge = runtimeBridge as typeof runtimeBridge & {
+      __emitRuntimeEvent: (event: RuntimeEvent) => void;
+    };
+
+    await act(async () => {
+      mockedBridge.__emitRuntimeEvent({
+        event: 'download.completed',
+        taskId: 'task-1',
+        target: 'genie-base',
+        status: 'completed',
+        message: 'GenieData 基础资源 下载完成',
+        progressCurrent: 4,
+        progressTotal: 4,
+        progressUnit: 'stage',
+        timestamp: '1712300002',
+      });
+    });
+
+    await waitFor(() => expect(screen.getByText('已就绪')).toBeInTheDocument());
+    expect(runtimeBridge.inspectRuntime).toHaveBeenCalledTimes(2);
+  });
+
   it('blocks runtime inspection and download actions until environment probe is ready', async () => {
     const user = userEvent.setup();
     vi.mocked(runtimeBridge.probeEnvironment).mockResolvedValue({

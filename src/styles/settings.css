@@ -299,6 +299,64 @@
   left: 23px;
 }
 
+.settings-shell .driver-select-wrap {
+  display: flex;
+  gap: 8px;
+}
+
+.settings-shell .driver-option {
+  height: 34px;
+  padding: 0 18px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease;
+}
+
+.settings-shell .driver-option:hover {
+  background: var(--panel-2);
+  color: var(--text);
+}
+
+.settings-shell .driver-option--active {
+  background: rgba(52, 155, 255, 0.12);
+  border-color: rgba(52, 155, 255, 0.5);
+  color: #5ab4ff;
+}
+
+.settings-shell .settings-save-row {
+  display: flex;
+  justify-content: flex-end;
+  margin: 16px 0 8px;
+}
+
+.settings-shell .settings-save-button {
+  height: 38px;
+  padding: 0 20px;
+  border-radius: 9px;
+  border: 1px solid rgba(52, 155, 255, 0.4);
+  background: rgba(52, 155, 255, 0.1);
+  color: #5ab4ff;
+  font-size: 14px;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.settings-shell .settings-save-button:hover {
+  background: rgba(52, 155, 255, 0.2);
+  border-color: rgba(52, 155, 255, 0.7);
+}
+
+.settings-shell .settings-save-button:active {
+  background: rgba(52, 155, 255, 0.3);
+}
+
 .settings-shell .about-card {
   padding: 24px;
   border-radius: 16px;

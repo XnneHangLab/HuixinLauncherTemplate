@@ -1,30 +1,38 @@
 use tauri::{AppHandle, State};
 
 use super::process::{
-    drain_download_queue, ensure_environment_ready, open_path, pick_workspace_root,
-    resolve_managed_path, run_inspect_command, run_probe_command, write_console_log,
+    cleanup_webui_port_conflicts, cleanup_webui_processes, drain_download_queue,
+    ensure_environment_ready, open_path, pick_python_path, pick_workspace_root,
+    resolve_managed_path, run_inspect_command, run_probe_command, spawn_webui_process,
+    write_console_log,
 };
-use super::state::{resolve_repo_root, resolve_workspace_root, RuntimeState};
+use super::state::{resolve_repo_root, resolve_workspace_root, RuntimeDriverConfig, RuntimeState};
 
 #[tauri::command]
-pub async fn inspect_runtime(state: State<'_, RuntimeState>) -> Result<serde_json::Value, String> {
+pub async fn inspect_runtime(
+    app: AppHandle,
+    state: State<'_, RuntimeState>,
+) -> Result<serde_json::Value, String> {
     let repo_root = state.repo_root.clone();
     let workspace_root = state.current_workspace_root();
+    let driver = state.current_driver_config();
     run_blocking_runtime_action(move || {
-        ensure_environment_ready(&repo_root, &workspace_root)?;
-        run_inspect_command(&repo_root, &workspace_root)
+        ensure_environment_ready(&repo_root, &workspace_root, &driver, &app)?;
+        run_inspect_command(&repo_root, &workspace_root, &driver, &app)
     })
     .await
 }
 
 #[tauri::command]
 pub async fn probe_environment(
+    app: AppHandle,
     state: State<'_, RuntimeState>,
 ) -> Result<serde_json::Value, String> {
     let repo_root = state.repo_root.clone();
     let workspace_root = state.current_workspace_root();
+    let driver = state.current_driver_config();
     run_blocking_runtime_action(move || {
-        let probe = run_probe_command(&repo_root, &workspace_root)?;
+        let probe = run_probe_command(&repo_root, &workspace_root, &driver, &app)?;
         serde_json::to_value(probe).map_err(|error| error.to_string())
     })
     .await
@@ -32,6 +40,7 @@ pub async fn probe_environment(
 
 #[tauri::command]
 pub async fn choose_workspace_root(
+    app: AppHandle,
     state: State<'_, RuntimeState>,
 ) -> Result<Option<serde_json::Value>, String> {
     let picked = run_blocking_runtime_action(pick_workspace_root).await?;
@@ -39,15 +48,16 @@ pub async fn choose_workspace_root(
         return Ok(None);
     };
 
-    switch_workspace_root(&state, path).await.map(Some)
+    switch_workspace_root(app, &state, path).await.map(Some)
 }
 
 #[tauri::command]
 pub async fn use_repo_workspace_root(
+    app: AppHandle,
     state: State<'_, RuntimeState>,
 ) -> Result<serde_json::Value, String> {
     let repo_root = state.repo_root.clone();
-    switch_workspace_root(&state, repo_root).await
+    switch_workspace_root(app, &state, repo_root).await
 }
 
 #[tauri::command]
@@ -58,8 +68,11 @@ pub async fn enqueue_download(
 ) -> Result<serde_json::Value, String> {
     let repo_root = state.repo_root.clone();
     let workspace_root = state.current_workspace_root();
+    let driver = state.current_driver_config();
+    let app_for_ensure = app.clone();
     run_blocking_runtime_action(move || {
-        ensure_environment_ready(&repo_root, &workspace_root).map(|_| ())
+        ensure_environment_ready(&repo_root, &workspace_root, &driver, &app_for_ensure)
+            .map(|_| ())
     })
     .await?;
 
@@ -75,6 +88,8 @@ pub async fn enqueue_download(
             repo_root: state.repo_root.clone(),
             workspace_root: state.workspace_root.clone(),
             queue: state.queue.clone(),
+            driver_config: state.driver_config.clone(),
+            webui: state.webui.clone(),
         };
 
         tauri::async_runtime::spawn_blocking(move || {
@@ -89,6 +104,20 @@ pub async fn enqueue_download(
 pub fn list_download_tasks(state: State<'_, RuntimeState>) -> Result<serde_json::Value, String> {
     let queue = state.queue.lock().unwrap();
     serde_json::to_value(&queue.tasks).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub fn list_managed_folders(state: State<'_, RuntimeState>) -> Result<serde_json::Value, String> {
+    let workspace_root = state.current_workspace_root();
+    let models_root = workspace_root.join("models");
+    let logs_root = workspace_root.join("logs");
+    let items = serde_json::json!([
+        { "key": "workspace",    "label": "根目录",           "path": workspace_root.display().to_string() },
+        { "key": "models",       "label": "模型目录",         "path": models_root.display().to_string() },
+        { "key": "genieBase",    "label": "Genie 基础资源",   "path": models_root.join("GenieData").display().to_string() },
+        { "key": "downloadLogs", "label": "下载日志",         "path": logs_root.join("downloads").display().to_string() },
+    ]);
+    Ok(items)
 }
 
 #[tauri::command]
@@ -115,10 +144,76 @@ pub fn build_runtime_state() -> Result<RuntimeState, String> {
     Ok(RuntimeState::new(repo_root, workspace_root))
 }
 
+#[tauri::command]
+pub async fn set_runtime_driver(
+    app: AppHandle,
+    state: State<'_, RuntimeState>,
+    driver: String,
+    python_path: Option<String>,
+) -> Result<serde_json::Value, String> {
+    let driver_config = match driver.as_str() {
+        "uv" => RuntimeDriverConfig::Uv,
+        "conda" => {
+            let path = python_path
+                .filter(|p| !p.is_empty())
+                .ok_or_else(|| "conda mode requires a python_path".to_string())?;
+            RuntimeDriverConfig::DirectPython {
+                python_path: std::path::PathBuf::from(path),
+            }
+        }
+        other => return Err(format!("unsupported runtime driver: {other}")),
+    };
+    state.set_driver_config(driver_config.clone());
+
+    let repo_root = state.repo_root.clone();
+    let workspace_root = state.current_workspace_root();
+    run_blocking_runtime_action(move || {
+        let probe = run_probe_command(&repo_root, &workspace_root, &driver_config, &app)?;
+        serde_json::to_value(probe).map_err(|error| error.to_string())
+    })
+    .await
+}
+
+#[tauri::command]
+pub async fn pick_python_path_command() -> Result<Option<String>, String> {
+    run_blocking_runtime_action(move || {
+        let path = pick_python_path()?;
+        Ok(path.map(|p| p.display().to_string()))
+    })
+    .await
+}
+
+#[tauri::command]
+pub async fn launch_webui(
+    app: AppHandle,
+    state: State<'_, RuntimeState>,
+) -> Result<(), String> {
+    let repo_root = state.repo_root.clone();
+    let workspace_root = state.current_workspace_root();
+    let driver = state.current_driver_config();
+    let runtime_state = RuntimeState {
+        repo_root: state.repo_root.clone(),
+        workspace_root: state.workspace_root.clone(),
+        queue: state.queue.clone(),
+        driver_config: state.driver_config.clone(),
+        webui: state.webui.clone(),
+    };
+    run_blocking_runtime_action(move || {
+        ensure_environment_ready(&repo_root, &workspace_root, &driver, &app)?;
+        cleanup_webui_processes(&app, &runtime_state)?;
+        cleanup_webui_port_conflicts(&app, 7860)?;
+        spawn_webui_process(app, runtime_state, &repo_root, &workspace_root, &driver, 7860)
+    })
+    .await
+}
+
 fn validate_download_target(target: &str) -> Result<(&'static str, &'static str), String> {
     match target {
         "genie-base" => Ok(("genie-base", "GenieData 基础资源")),
         "gsv-lite" => Ok(("gsv-lite", "GSV-Lite 数据包")),
+        "qwen-tts-0.6b" => Ok(("qwen-tts-0.6b", "Qwen3-TTS 0.6B")),
+        "qwen-tts-1.7b" => Ok(("qwen-tts-1.7b", "Qwen3-TTS 1.7B")),
+        "luming-genie-tts-v2-pro-plus" => Ok(("luming-genie-tts-v2-pro-plus", "路鸣 Genie-TTS v2 Pro+")),
         other => Err(format!("unsupported download target: {other}")),
     }
 }
@@ -134,6 +229,7 @@ where
 }
 
 async fn switch_workspace_root(
+    app: AppHandle,
     state: &RuntimeState,
     next_workspace_root: std::path::PathBuf,
 ) -> Result<serde_json::Value, String> {
@@ -148,8 +244,9 @@ async fn switch_workspace_root(
     state.set_workspace_root(next_workspace_root.clone());
 
     let repo_root = state.repo_root.clone();
+    let driver = state.current_driver_config();
     run_blocking_runtime_action(move || {
-        let probe = run_probe_command(&repo_root, &next_workspace_root)?;
+        let probe = run_probe_command(&repo_root, &next_workspace_root, &driver, &app)?;
         serde_json::to_value(probe).map_err(|error| error.to_string())
     })
     .await

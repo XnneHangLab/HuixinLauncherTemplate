@@ -8,6 +8,7 @@ import type { PageId } from '../data/nav';
 import type { ConsoleLogEntry } from '../services/launcher/launcher';
 import type {
   EnvironmentProbe,
+  FileProgress,
   ManagedFolderItem,
   RuntimeInspection,
   RuntimeDriver,
@@ -17,6 +18,7 @@ import type {
 interface RenderPageOptions {
   inspection: RuntimeInspection | null;
   tasks: RuntimeTaskRecord[];
+  fileProgress: FileProgress | null;
   folders: ManagedFolderItem[];
   logs: ConsoleLogEntry[];
   autoScroll: boolean;
@@ -25,7 +27,12 @@ interface RenderPageOptions {
   onOpenModels: () => void;
   onDownloadGenieBase: () => void;
   onDownloadGsvLite: () => void;
+  onDownloadQwenTts06b: () => void;
+  onDownloadQwenTts17b: () => void;
+  onDownloadLumingGenieTts: () => void;
   onOpenPath: (pathKey: string) => void;
+  onLaunchWebui: () => void;
+  webuiRunning: boolean;
   runtimeDriver: RuntimeDriver;
   runtimeMode: string;
   scriptsReady: boolean;
@@ -34,11 +41,12 @@ interface RenderPageOptions {
   environmentProbe: EnvironmentProbe | null;
   onChooseWorkspaceRoot: () => void;
   onUseRepoWorkspaceRoot: () => void;
-  pythonPath: string;
+  pythonExePath: string;
+  onChoosePythonExe: () => Promise<string | null>;
+  onSave: (driver: RuntimeDriver, pythonExePath: string) => void;
   onSetAutoScroll: (next: boolean) => void;
   onSetWrapLines: (next: boolean) => void;
   onClearLogs: () => void;
-  onCopyLog: (text: string) => void;
   onExportLogs: () => void;
 }
 
@@ -53,6 +61,8 @@ export function renderPage(
           folders={options.folders}
           onOpenPath={options.onOpenPath}
           onOpenModels={options.onOpenModels}
+          onLaunchWebui={options.onLaunchWebui}
+          webuiRunning={options.webuiRunning}
         />
       );
     case 'settings':
@@ -63,7 +73,10 @@ export function renderPage(
           environmentProbe={options.environmentProbe}
           onChooseWorkspaceRoot={options.onChooseWorkspaceRoot}
           onUseRepoWorkspaceRoot={options.onUseRepoWorkspaceRoot}
-          pythonPath={options.pythonPath}
+          runtimeDriver={options.runtimeDriver}
+          pythonExePath={options.pythonExePath}
+          onChoosePythonExe={options.onChoosePythonExe}
+          onSave={options.onSave}
         />
       );
     case 'advanced':
@@ -93,8 +106,12 @@ export function renderPage(
           inspection={options.inspection}
           environmentProbe={options.environmentProbe}
           tasks={options.tasks}
+          fileProgress={options.fileProgress}
           onDownloadGenieBase={options.onDownloadGenieBase}
           onDownloadGsvLite={options.onDownloadGsvLite}
+          onDownloadQwenTts06b={options.onDownloadQwenTts06b}
+          onDownloadQwenTts17b={options.onDownloadQwenTts17b}
+          onDownloadLumingGenieTts={options.onDownloadLumingGenieTts}
           scriptsReady={options.scriptsReady}
         />
       );
@@ -123,7 +140,6 @@ export function renderPage(
           onSetAutoScroll={options.onSetAutoScroll}
           onSetWrapLines={options.onSetWrapLines}
           onClearLogs={options.onClearLogs}
-          onCopyLog={options.onCopyLog}
           onExportLogs={options.onExportLogs}
         />
       );

@@ -13,20 +13,28 @@ import {
   enqueueDownload,
   exportConsoleLogs,
   inspectRuntime,
+  launchWebui,
   listDownloadTasks,
+  listManagedFolders,
   openManagedPath,
+  pickPythonPath,
   probeEnvironment,
+  setRuntimeDriver as setRuntimeDriverApi,
   subscribeRuntimeEvents,
+  subscribeWebuiStatus,
   useRepoWorkspaceRoot,
 } from '../../services/runtime/bridge';
 import {
   applyRuntimeEvent,
+  buildFolderItemsFromPaths,
   buildManagedFolderItems,
   createConsoleLogFromRuntimeEvent,
   getQueueSummary,
   isEnvironmentReady,
   type EnvironmentProbe,
+  type FileProgress,
   type ManagedFolderItem,
+  type RuntimeDriver,
   type RuntimeInspection,
   type RuntimeTaskRecord,
 } from '../../services/runtime/runtime';
@@ -47,10 +55,14 @@ export function AppShell() {
   const [environmentProbe, setEnvironmentProbe] = useState<EnvironmentProbe | null>(null);
   const [inspection, setInspection] = useState<RuntimeInspection | null>(null);
   const [tasks, setTasks] = useState<RuntimeTaskRecord[]>([]);
+  const [fileProgress, setFileProgress] = useState<FileProgress | null>(null);
   const [folders, setFolders] = useState<ManagedFolderItem[]>([]);
   const [logs, setLogs] = useState<ConsoleLogEntry[]>([]);
   const [autoScroll, setAutoScroll] = useState(true);
   const [wrapLines, setWrapLines] = useState(true);
+  const [runtimeDriver, setRuntimeDriver] = useState<RuntimeDriver>('uv');
+  const [pythonExePath, setPythonExePath] = useState('');
+  const [webuiRunning, setWebuiRunning] = useState(false);
 
   useEffect(() => {
     writeStoredTheme(theme);
@@ -60,8 +72,32 @@ export function AppShell() {
     let disposed = false;
     let unsubscribe = () => {};
 
+    async function refreshInspectionSnapshot() {
+      try {
+        const nextInspection = await inspectRuntime();
+        if (disposed) {
+          return;
+        }
+        setInspection(nextInspection);
+        setFolders(buildManagedFolderItems(nextInspection));
+      } catch (error) {
+        if (disposed) {
+          return;
+        }
+        setLogs((current) => [
+          ...current,
+          createConsoleLog('stderr', `刷新资源状态失败: ${toErrorMessage(error)}`),
+        ]);
+      }
+    }
+
     void (async () => {
       try {
+        // Populate folder cards immediately from Rust state — no Python subprocess needed
+        listManagedFolders()
+          .then((paths) => { if (!disposed) setFolders(buildFolderItemsFromPaths(paths)); })
+          .catch(() => {});
+
         const [nextProbe, nextTasks] = await Promise.all([
           probeEnvironment(),
           listDownloadTasks(),
@@ -74,16 +110,10 @@ export function AppShell() {
 
         if (!isEnvironmentReady(nextProbe)) {
           setInspection(null);
-          setFolders([]);
           return;
         }
 
-        const nextInspection = await inspectRuntime();
-        if (disposed) {
-          return;
-        }
-        setInspection(nextInspection);
-        setFolders(buildManagedFolderItems(nextInspection));
+        await refreshInspectionSnapshot();
       } catch (error) {
         if (disposed) {
           return;
@@ -97,6 +127,20 @@ export function AppShell() {
 
     void subscribeRuntimeEvents(
       (event) => {
+        if (event.event === 'download.file_progress') {
+          setFileProgress({
+            target: event.target,
+            desc: event.desc ?? '',
+            percent: event.percent ?? 0,
+            downloaded: event.downloaded,
+            total: event.total,
+          });
+          return;
+        }
+        if (event.event === 'download.completed' || event.event === 'download.failed') {
+          setFileProgress(null);
+          void refreshInspectionSnapshot();
+        }
         setTasks((current) => applyRuntimeEvent(current, event));
         setLogs((current) => [...current, createConsoleLogFromRuntimeEvent(event)]);
       },
@@ -121,9 +165,29 @@ export function AppShell() {
         ]);
       });
 
+    let unsubscribeWebui = () => {};
+    void subscribeWebuiStatus((status) => {
+      if (status === 'stopped') {
+        setWebuiRunning(false);
+        setLogs((current) => [
+          ...current,
+          createConsoleLog('system', 'Gradio WebUI 进程已退出'),
+        ]);
+      }
+    })
+      .then((cleanup) => {
+        if (disposed) {
+          cleanup();
+          return;
+        }
+        unsubscribeWebui = cleanup;
+      })
+      .catch(() => {});
+
     return () => {
       disposed = true;
       unsubscribe();
+      unsubscribeWebui();
     };
   }, []);
 
@@ -167,6 +231,93 @@ export function AppShell() {
 
     try {
       const task = await enqueueDownload('gsv-lite');
+      setTasks((current) => {
+        const next = current.filter((item) => item.taskId !== task.taskId);
+        next.push(task);
+        return next;
+      });
+      setLogs((current) => [
+        ...current,
+        createConsoleLog('system', `${task.label}: ${task.message}`),
+      ]);
+      setActivePage('models');
+    } catch (error) {
+      setLogs((current) => [
+        ...current,
+        createConsoleLog('stderr', `创建下载任务失败: ${toErrorMessage(error)}`),
+      ]);
+    }
+  }
+
+  async function handleDownloadQwenTts06b() {
+    if (!isEnvironmentReady(environmentProbe)) {
+      setLogs((current) => [
+        ...current,
+        createConsoleLog('stderr', '环境未就绪，已禁止执行运行时脚本'),
+      ]);
+      return;
+    }
+
+    try {
+      const task = await enqueueDownload('qwen-tts-0.6b');
+      setTasks((current) => {
+        const next = current.filter((item) => item.taskId !== task.taskId);
+        next.push(task);
+        return next;
+      });
+      setLogs((current) => [
+        ...current,
+        createConsoleLog('system', `${task.label}: ${task.message}`),
+      ]);
+      setActivePage('models');
+    } catch (error) {
+      setLogs((current) => [
+        ...current,
+        createConsoleLog('stderr', `创建下载任务失败: ${toErrorMessage(error)}`),
+      ]);
+    }
+  }
+
+  async function handleDownloadQwenTts17b() {
+    if (!isEnvironmentReady(environmentProbe)) {
+      setLogs((current) => [
+        ...current,
+        createConsoleLog('stderr', '环境未就绪，已禁止执行运行时脚本'),
+      ]);
+      return;
+    }
+
+    try {
+      const task = await enqueueDownload('qwen-tts-1.7b');
+      setTasks((current) => {
+        const next = current.filter((item) => item.taskId !== task.taskId);
+        next.push(task);
+        return next;
+      });
+      setLogs((current) => [
+        ...current,
+        createConsoleLog('system', `${task.label}: ${task.message}`),
+      ]);
+      setActivePage('models');
+    } catch (error) {
+      setLogs((current) => [
+        ...current,
+        createConsoleLog('stderr', `创建下载任务失败: ${toErrorMessage(error)}`),
+      ]);
+    }
+  }
+
+  async function handleDownloadLumingGenieTts() {
+    if (!isEnvironmentReady(environmentProbe)) {
+      setLogs((current) => [
+        ...current,
+        createConsoleLog('stderr', '环境未就绪，已禁止执行运行时脚本'),
+      ]);
+      return;
+    }
+
+    try {
+      const task = await enqueueDownload('luming-genie-tts-v2-pro-plus');
       setTasks((current) => {
         const next = current.filter((item) => item.taskId !== task.taskId);
         next.push(task);
@@ -238,6 +389,34 @@ export function AppShell() {
     }
   }
 
+  async function handleChoosePythonExe(): Promise<string | null> {
+    try {
+      return await pickPythonPath();
+    } catch (error) {
+      setLogs((current) => [
+        ...current,
+        createConsoleLog('stderr', `选择 Python 路径失败: ${toErrorMessage(error)}`),
+      ]);
+      return null;
+    }
+  }
+
+  async function handleSaveSettings(driver: RuntimeDriver, exePath: string) {
+    try {
+      const nextProbe = await setRuntimeDriverApi(driver, exePath || null);
+      setRuntimeDriver(driver);
+      setPythonExePath(exePath);
+      if (nextProbe) {
+        await handleWorkspaceProbe(nextProbe);
+      }
+    } catch (error) {
+      setLogs((current) => [
+        ...current,
+        createConsoleLog('stderr', `保存设置失败: ${toErrorMessage(error)}`),
+      ]);
+    }
+  }
+
   async function handleExportLogs() {
     try {
       const output = formatConsoleExport(logs);
@@ -254,8 +433,26 @@ export function AppShell() {
     }
   }
 
-  function handleCopyLog(text: string) {
-    void navigator.clipboard?.writeText(text);
+  async function handleLaunchWebui() {
+    if (!isEnvironmentReady(environmentProbe)) {
+      setLogs((current) => [
+        ...current,
+        createConsoleLog('stderr', '环境未就绪，已禁止启动 WebUI'),
+      ]);
+      return;
+    }
+
+    setActivePage('console');
+    setWebuiRunning(true);
+    try {
+      await launchWebui();
+    } catch (error) {
+      setWebuiRunning(false);
+      setLogs((current) => [
+        ...current,
+        createConsoleLog('stderr', `启动 WebUI 失败: ${toErrorMessage(error)}`),
+      ]);
+    }
   }
 
   function handleClearLogs() {
@@ -288,6 +485,7 @@ export function AppShell() {
             {renderPage(activePage, {
               inspection,
               tasks,
+              fileProgress,
               folders,
               logs,
               autoScroll,
@@ -296,8 +494,13 @@ export function AppShell() {
               onOpenModels: () => setActivePage('models'),
               onDownloadGenieBase: handleDownloadGenieBase,
               onDownloadGsvLite: handleDownloadGsvLite,
+              onDownloadQwenTts06b: handleDownloadQwenTts06b,
+              onDownloadQwenTts17b: handleDownloadQwenTts17b,
+              onDownloadLumingGenieTts: handleDownloadLumingGenieTts,
               onOpenPath: handleOpenManagedPath,
-              runtimeDriver: inspection?.runtimeDriver ?? 'uv',
+              onLaunchWebui: handleLaunchWebui,
+              webuiRunning,
+              runtimeDriver,
               runtimeMode,
               scriptsReady,
               workspaceLocked,
@@ -306,11 +509,12 @@ export function AppShell() {
               environmentProbe,
               onChooseWorkspaceRoot: handleChooseWorkspaceRoot,
               onUseRepoWorkspaceRoot: handleUseRepoWorkspaceRoot,
-              pythonPath: inspection?.pythonPath ?? '',
+              pythonExePath,
+              onChoosePythonExe: handleChoosePythonExe,
+              onSave: handleSaveSettings,
               onSetAutoScroll: setAutoScroll,
               onSetWrapLines: setWrapLines,
               onClearLogs: handleClearLogs,
-              onCopyLog: handleCopyLog,
               onExportLogs: handleExportLogs,
             })}
           </section>

@@ -16,8 +16,7 @@ export function getVisibleCommand(command: string | null): string {
 }
 
 function createTimestamp() {
-  const date = new Date();
-  return date.toLocaleString('zh-CN', { hour12: false });
+  return new Date().toLocaleTimeString('zh-CN', { hour12: false });
 }
 
 export function createConsoleLog(

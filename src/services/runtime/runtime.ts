@@ -2,7 +2,7 @@ import { createConsoleLog, type ConsoleLogEntry } from '../launcher/launcher';
 
 export type RuntimeMode = 'cpu' | 'gpu';
 export type ResourceStatus = 'missing' | 'partial' | 'ready';
-export type RuntimeDriver = 'uv';
+export type RuntimeDriver = 'uv' | 'conda';
 export type EnvironmentProbeStatus =
   | 'workspace-invalid'
   | 'uv-unavailable'
@@ -101,6 +101,19 @@ export interface RuntimeEvent {
   progressTotal: number;
   progressUnit: string;
   timestamp: string;
+  // present only when event === 'download.file_progress'
+  desc?: string;
+  percent?: number;
+  downloaded?: string;
+  total?: string;
+}
+
+export interface FileProgress {
+  target: string;
+  desc: string;
+  percent: number;
+  downloaded?: string;
+  total?: string;
 }
 
 export interface ManagedFolderItem {
@@ -121,7 +134,11 @@ const folderIcons: Record<string, string> = {
 export function buildManagedFolderItems(
   inspection: RuntimeInspection,
 ): ManagedFolderItem[] {
-  return inspection.managedPaths.map((item) => ({
+  return buildFolderItemsFromPaths(inspection.managedPaths);
+}
+
+export function buildFolderItemsFromPaths(paths: ManagedPath[]): ManagedFolderItem[] {
+  return paths.map((item) => ({
     key: item.key,
     title: item.label,
     path: item.path,
