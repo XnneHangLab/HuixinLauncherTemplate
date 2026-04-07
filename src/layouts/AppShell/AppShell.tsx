@@ -145,7 +145,15 @@ export function AppShell() {
         setLogs((current) => [...current, createConsoleLogFromRuntimeEvent(event)]);
       },
       (line) => {
-        setLogs((current) => [...current, createConsoleLog('stdout', line)]);
+        setLogs((current) => {
+          const isTqdm = line.includes('%|');
+          const lastIsTqdm =
+            current.length > 0 && current[current.length - 1].text.includes('%|');
+          if (isTqdm && lastIsTqdm) {
+            return [...current.slice(0, -1), createConsoleLog('stdout', line)];
+          }
+          return [...current, createConsoleLog('stdout', line)];
+        });
       },
     )
       .then((cleanup) => {
