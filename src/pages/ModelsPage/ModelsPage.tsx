@@ -170,8 +170,8 @@ export function ModelsPage({
                     <div className="models-page__file-progress">
                       <div className="models-page__file-progress-bar">
                         <div
-                          className="models-page__file-progress-fill"
-                          style={{ width: `${fp.percent}%` }}
+                          className={`models-page__file-progress-fill${fp.percent === 0 ? ' models-page__file-progress-fill--indeterminate' : ''}`}
+                          style={fp.percent > 0 ? { width: `${fp.percent}%` } : {}}
                         />
                       </div>
                       <div className="models-page__file-progress-meta">
@@ -179,8 +179,9 @@ export function ModelsPage({
                           {fp.desc.split('/').pop()}
                         </span>
                         <span className="models-page__file-progress-info">
-                          {fp.percent}%
-                          {fp.downloaded && fp.total && ` · ${fp.downloaded} / ${fp.total}`}
+                          {fp.percent > 0
+                            ? `${fp.percent}%${fp.downloaded && fp.total ? ` · ${fp.downloaded} / ${fp.total}` : ''}`
+                            : '下载中…'}
                         </span>
                       </div>
                     </div>

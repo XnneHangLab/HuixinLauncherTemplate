@@ -171,11 +171,35 @@
   overflow: hidden;
 }
 
+@keyframes file-progress-indeterminate {
+  0% { left: -40%; width: 40%; }
+  60% { left: 100%; width: 40%; }
+  100% { left: 100%; width: 40%; }
+}
+
 .models-page__file-progress-fill {
   height: 100%;
   background: var(--accent);
   border-radius: 2px;
   transition: width 0.25s ease;
+}
+
+.models-page__file-progress-fill--indeterminate {
+  position: relative;
+  width: 100% !important;
+  background: transparent;
+  transition: none;
+}
+
+.models-page__file-progress-fill--indeterminate::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 40%;
+  background: var(--accent);
+  border-radius: 2px;
+  animation: file-progress-indeterminate 1.4s ease-in-out infinite;
 }
 
 .models-page__file-progress-meta {
