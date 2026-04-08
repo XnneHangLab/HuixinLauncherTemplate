@@ -1035,10 +1035,40 @@ pub fn spawn_webui_process(
     });
 
     thread::spawn(move || {
-        for line in BufReader::new(stderr).lines().flatten() {
-            if !line.trim().is_empty() {
-                let _ = app.emit("runtime:raw-log", &line);
+        use std::io::Read;
+        let mut reader = BufReader::new(stderr);
+        let mut buf = Vec::<u8>::new();
+        let mut chunk = [0u8; 4096];
+        loop {
+            let n = match reader.read(&mut chunk) {
+                Ok(0) => break,
+                Ok(n) => n,
+                Err(_) => break,
+            };
+            for &byte in &chunk[..n] {
+                if byte == b'\r' {
+                    let text = String::from_utf8_lossy(&buf);
+                    let text = text.trim();
+                    if !text.is_empty() {
+                        let _ = app.emit("runtime:raw-log-replace", text);
+                    }
+                    buf.clear();
+                } else if byte == b'\n' {
+                    let text = String::from_utf8_lossy(&buf);
+                    let text = text.trim();
+                    if !text.is_empty() {
+                        let _ = app.emit("runtime:raw-log", text);
+                    }
+                    buf.clear();
+                } else {
+                    buf.push(byte);
+                }
             }
+        }
+        let text = String::from_utf8_lossy(&buf);
+        let text = text.trim();
+        if !text.is_empty() {
+            let _ = app.emit("runtime:raw-log", text);
         }
         let _ = child.wait();
         if state.clear_webui_process_if_matches(record.launch_id) {
