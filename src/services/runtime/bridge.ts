@@ -65,6 +65,7 @@ export async function subscribeWebuiStatus(onStatus: (status: string) => void) {
 export async function subscribeRuntimeEvents(
   onEvent: (event: RuntimeEvent) => void,
   onRawLog: (line: string) => void,
+  onRawLogReplace: (line: string) => void,
 ) {
   const unlistenCallbacks: Array<() => void> = [];
 
@@ -78,6 +79,11 @@ export async function subscribeRuntimeEvents(
       onRawLog(event.payload);
     });
     unlistenCallbacks.push(unlistenRaw);
+
+    const unlistenRawReplace = await listen<string>('runtime:raw-log-replace', (event) => {
+      onRawLogReplace(event.payload);
+    });
+    unlistenCallbacks.push(unlistenRawReplace);
   } catch (error) {
     unlistenCallbacks.forEach((cleanup) => cleanup());
     throw error;
